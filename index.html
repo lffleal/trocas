@@ -1,0 +1,1061 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0d6b62">
+<meta name="description" content="Encontra trocas de turno a partir do horário SISQUAL. O PDF é lido só no teu dispositivo.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Trocas">
+<title>Trocas de Turno</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Barlow+Condensed:wght@600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+html{-webkit-text-size-adjust:100%}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0}
+/* Layout: one narrow column like a ward rota clipboard; sticky action bar at the bottom; shift chips carry the SISQUAL colour of each post. */
+:root{
+  --bg:#f3f5f4; --surface:#ffffff; --ink:#17221f; --muted:#5b6964; --line:#d9e0dd;
+  --accent:#0d6b62; --accent-ink:#ffffff; --accent-soft:#dcefeb;
+  --warn:#b4630a; --bad:#b3261e; --good:#1d7a46;
+  --c-hemo:#a8611f; --c-prev:#e07800; --c-cic:#1b63c9; --c-reab:#6a5fd6; --c-ens:#a88a00;
+  --c-rec:#cf2a2a; --c-paces:#1a9450; --c-medcir:#b8459f; --c-extra:#2e7a33; --c-plain:#3d4a46; --c-block:#9aa5a1;
+  --chip-bg:#eef2f0;
+  --l1:#1d7a46; --l2:#5f7d1c; --l3:#a46a00; --l4:#b4470a; --l5:#9b1c4a;
+  --f-display:"Barlow Condensed","Arial Narrow",sans-serif;
+  --f-body:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f1514; --surface:#18201e; --ink:#e6eeeb; --muted:#9aaba5; --line:#2b3633;
+  --accent:#4fc1b1; --accent-ink:#06211d; --accent-soft:#163631;
+  --warn:#e3a14d; --bad:#ff8a80; --good:#6fd39a;
+  --c-hemo:#d58b45; --c-prev:#ff9d2e; --c-cic:#5d9cf5; --c-reab:#9d95f2; --c-ens:#d9bd3a;
+  --c-rec:#ff6b6b; --c-paces:#4cc985; --c-medcir:#e17ccb; --c-extra:#68b86d; --c-plain:#c3cfcb; --c-block:#5d6a66;
+  --chip-bg:#202a28;
+  --l1:#6fd39a; --l2:#b5d36a; --l3:#e3b34d; --l4:#ff9a5c; --l5:#ff7aa8;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1514; --surface:#18201e; --ink:#e6eeeb; --muted:#9aaba5; --line:#2b3633;
+  --accent:#4fc1b1; --accent-ink:#06211d; --accent-soft:#163631;
+  --warn:#e3a14d; --bad:#ff8a80; --good:#6fd39a;
+  --c-hemo:#d58b45; --c-prev:#ff9d2e; --c-cic:#5d9cf5; --c-reab:#9d95f2; --c-ens:#d9bd3a;
+  --c-rec:#ff6b6b; --c-paces:#4cc985; --c-medcir:#e17ccb; --c-extra:#68b86d; --c-plain:#c3cfcb; --c-block:#5d6a66;
+  --chip-bg:#202a28;
+  --l1:#6fd39a; --l2:#b5d36a; --l3:#e3b34d; --l4:#ff9a5c; --l5:#ff7aa8;
+  color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.45;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 120px}
+.wrap{max-width:640px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+header.top{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding-top:18px;flex-wrap:wrap}
+h1{font-family:var(--f-display);font-weight:700;font-size:2.1rem;letter-spacing:.01em;margin:0;line-height:1;text-wrap:balance}
+h1 span{color:var(--accent)}
+h2{font-family:var(--f-display);font-weight:600;font-size:1.45rem;margin:0;letter-spacing:.01em;text-wrap:balance}
+h3{font-size:1rem;margin:0}
+.muted{color:var(--muted)}
+.small{font-size:.86rem}
+.eyebrow{font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.steps{margin:0;padding-left:1.3em;display:flex;flex-direction:column;gap:6px}
+button,.btn{font:inherit;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:10px 14px;cursor:pointer}
+button:focus-visible,input:focus-visible,label:focus-within{outline:3px solid var(--accent);outline-offset:2px}
+.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:700}
+.primary:disabled{opacity:.5;cursor:not-allowed}
+.drop{border:2px dashed var(--line);border-radius:12px;padding:22px 16px;text-align:center;display:flex;flex-direction:column;gap:8px;align-items:center;cursor:pointer}
+.drop.over{border-color:var(--accent);background:var(--accent-soft)}
+.drop input{position:absolute;opacity:0;width:1px;height:1px}
+.privacy{display:flex;gap:10px;align-items:flex-start;font-size:.88rem;color:var(--muted)}
+.privacy svg{flex:none;margin-top:2px}
+.pill{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:3px 10px;font-size:.82rem;background:var(--accent-soft);color:var(--ink)}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.spread{justify-content:space-between}
+input[type=search]{font:inherit;width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+.people{display:flex;flex-direction:column;gap:14px;max-height:55vh;overflow:auto;padding-right:2px}
+.people .grp{display:flex;flex-direction:column;gap:4px}
+.people button{text-align:left;display:flex;justify-content:space-between;gap:8px;padding:9px 12px}
+.people button .num{font-family:var(--f-mono);font-size:.8rem;color:var(--muted)}
+.people button.sel{border-color:var(--accent);background:var(--accent-soft)}
+/* calendar */
+.month{display:flex;flex-direction:column;gap:8px}
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.cal .wd{font-size:.7rem;text-align:center;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.day{min-height:64px;border:1px solid var(--line);border-radius:8px;background:var(--surface);padding:4px;display:flex;flex-direction:column;gap:2px;cursor:pointer;text-align:left;font:inherit;color:inherit;position:relative;min-width:0}
+.day.empty{visibility:hidden}
+.day.past{opacity:.45;cursor:default}
+.day.we{background:var(--chip-bg)}
+.day .code{font-size:.64rem;padding:1px 2px}
+.day .dn{font-size:.72rem;color:var(--muted);font-variant-numeric:tabular-nums;display:flex;justify-content:space-between}
+.day.hol .dn b{color:var(--accent)}
+.day.free{outline:2.5px solid var(--accent);outline-offset:-1px}
+.day.nogo{background-image:repeating-linear-gradient(135deg,transparent 0 6px,color-mix(in srgb,var(--bad) 22%,transparent) 6px 8px)}
+.day .flag{position:absolute;right:3px;bottom:3px;font-size:.6rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+.day .flag.f{color:var(--accent)}
+.day .flag.n{color:var(--bad)}
+.code{font-family:var(--f-mono);font-weight:700;font-size:.72rem;line-height:1.2;border-radius:3px;padding:1px 4px;display:inline-flex;gap:3px;align-items:center;max-width:100%;overflow:hidden;white-space:nowrap;background:#ffffff;color:#000000;box-shadow:inset 0 0 0 1px rgba(0,0,0,.18)}
+.code .mc{background:#ff80ff;color:#000000;padding:0 2px;border-radius:2px}
+/* cores tal como no horário SISQUAL */
+.k-HEMO{background:#d1802e;color:#000000}
+.k-PREV{background:#ff8000;color:#80ff00}
+.k-CIC{background:#0080ff;color:#0f0f0f}
+.k-FI{background:#1f8fff;color:#ffffff}
+.k-REAB{background:#8080ff;color:#000000}
+.k-ENSINOS{background:#ffff80;color:#000000}
+.k-RECOBRO{background:#ff0000;color:#000000}
+.k-PACES{background:#ffffff;color:#00d600}
+.k-EXTRA{background:#008000;color:#ffffff}
+.k-BLOCK{background:#ffffff;color:#ad1e3a}
+.k-OFF{background:#ffffff;color:#000000;font-weight:500}
+.k-LEAVE{background:#ffffff;color:#ad1e3a;font-weight:500;font-style:italic}
+.legend{display:flex;flex-wrap:wrap;gap:6px 10px;font-size:.78rem;color:var(--muted)}
+.legend .code{font-size:.7rem}
+/* sheet */
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:20}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:21;background:var(--surface);border-top-left-radius:16px;border-top-right-radius:16px;border:1px solid var(--line);
+  padding:16px max(16px,env(safe-area-inset-right,0px)) calc(16px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));max-height:85vh;overflow:auto}
+.sheet .inner{max-width:640px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+.opt{display:flex;gap:12px;align-items:flex-start;border:1px solid var(--line);border-radius:10px;padding:10px 12px;cursor:pointer}
+.opt input{margin-top:4px;width:18px;height:18px;accent-color:var(--accent)}
+.opt.nogo input{accent-color:var(--bad)}
+.pick{border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.pick-h{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.seg{display:grid;grid-template-columns:repeat(auto-fit,minmax(88px,1fr));gap:6px}
+.segb{display:flex;flex-direction:column;align-items:center;gap:1px;padding:8px 6px;border-radius:10px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;cursor:pointer}
+.segb b{font-family:var(--f-mono);font-size:1rem}
+.segb span{font-size:.78rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.segb small{font-size:.7rem;color:var(--muted)}
+.segb.full{border-style:dashed}
+.nogo-seg{grid-template-columns:repeat(4,minmax(0,1fr))}
+.nogo-seg .segb b{font-size:.85rem}
+.nogob[aria-pressed="true"]{background:var(--bad)!important;border-color:var(--bad)!important;color:#fff!important}
+.nogob[aria-pressed="true"] span{color:#fff!important}
+.segb[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);border-style:solid}
+.segb[aria-pressed="true"] span,.segb[aria-pressed="true"] small{color:var(--accent-ink)}
+.subopts{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.subopts label{border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:.82rem;cursor:pointer}
+.subopts input{position:absolute;opacity:0}
+.subopts label:has(input:checked){background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.bar{position:fixed;left:0;right:0;bottom:0;z-index:15;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(6px);border-top:1px solid var(--line);
+  padding:10px max(16px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.bar .inner{max-width:640px;margin:0 auto;display:flex;gap:10px;align-items:center;justify-content:space-between}
+.bar .primary{flex:1;max-width:320px}
+/* results */
+.unit{display:flex;flex-direction:column;gap:10px}
+.unit-h{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.sol{border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:12px 14px;display:flex;flex-direction:column;gap:8px;border-left:6px solid var(--lvl)}
+.sol[data-l="1"]{--lvl:var(--l1)} .sol[data-l="2"]{--lvl:var(--l2)} .sol[data-l="3"]{--lvl:var(--l3)} .sol[data-l="4"]{--lvl:var(--l4)} .sol[data-l="5"],.sol[data-l="6"]{--lvl:var(--l5)}
+.lvl{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--lvl)}
+.moves{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.moves li{display:flex;flex-direction:column;gap:2px}
+.moves .who{font-weight:700}
+.moves .what{font-size:.9rem;color:var(--muted);display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.issues{margin:0;padding-left:1.1em;font-size:.86rem;color:var(--muted)}
+.hours{font-size:.88rem;font-variant-numeric:tabular-nums;color:var(--ink);line-height:1.6}
+.hours .v{font-weight:700;border-radius:4px;padding:0 5px;white-space:nowrap}
+.hours .v.ok{color:var(--good);background:color-mix(in srgb,var(--good) 16%,transparent)}
+.hours .v.warn{color:var(--warn);background:color-mix(in srgb,var(--warn) 18%,transparent)}
+.hours .v.bad{color:var(--bad);background:color-mix(in srgb,var(--bad) 16%,transparent)}
+.more{align-self:flex-start}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(90px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 14px;border-radius:10px;font-size:.88rem;z-index:30;max-width:90vw}
+.debt{display:flex;flex-direction:column;gap:2px;border-radius:8px;padding:8px 10px;font-size:.88rem}
+.debt.bad{background:color-mix(in srgb,var(--bad) 18%,transparent);border:1.5px solid var(--bad);color:var(--ink)}
+.debt.bad strong{color:var(--bad)}
+.debt.warn{background:color-mix(in srgb,var(--warn) 16%,transparent);border:1.5px solid var(--warn);color:var(--ink)}
+.debt.warn strong{color:var(--warn)}
+.part{border-left:2px solid var(--line);padding-left:10px;display:flex;flex-direction:column;gap:6px}
+.part-h{display:flex;gap:6px;align-items:center;font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.tag{font-size:.75rem;border-radius:999px;padding:2px 8px;background:var(--accent-soft);color:var(--ink)}
+.grp-h{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;margin-top:6px;padding-top:10px;border-top:1px solid var(--line)}
+.grp-h h4{margin:0;font-size:1rem}
+.note{border-left:3px solid var(--warn);padding:6px 10px;font-size:.88rem;background:var(--surface);border-radius:0 8px 8px 0}
+details summary{cursor:pointer}
+.spinner{width:18px;height:18px;border:3px solid var(--accent-soft);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spinner{animation:none}}
+.tabnums{font-variant-numeric:tabular-nums}
+</style>
+</head>
+<body>
+
+<div class="wrap" id="app">
+  <header class="top">
+    <h1>Trocas <span>de Turno</span></h1>
+    <span class="eyebrow">Cardiologia · ULSTS</span>
+  </header>
+
+  <!-- 1. carregar -->
+  <section class="panel" id="sec-load">
+    <div class="eyebrow">Passo 1</div>
+    <h2>Carrega o horário</h2>
+    <label class="drop" id="drop" for="file">
+      <input type="file" id="file" accept=".pdf,application/pdf" multiple>
+      <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 12v6M9 15l3-3 3 3"/></svg>
+      <strong>Escolher PDF do SISQUAL</strong>
+      <span class="muted small">Podes juntar dois meses seguidos (ex.: outubro e novembro).</span>
+    </label>
+    <div class="privacy">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+      <span>O PDF é lido só neste dispositivo. Nada é enviado nem guardado fora dele.</span>
+    </div>
+    <div id="load-status" class="small" hidden></div>
+  </section>
+
+  <!-- como funciona (estado inicial) -->
+  <section class="panel" id="sec-how">
+    <div class="eyebrow">Como funciona</div>
+    <ol class="steps">
+      <li>Carregas o horário mais recente e escolhes o teu nome.</li>
+      <li>Tocas nos turnos que queres libertar e nos dias em que não podes mesmo trabalhar.</li>
+      <li>A app procura trocas diretas e em cadeia (até 4 pessoas) que respeitam as regras do serviço e ordena-as da melhor para a de último recurso.</li>
+    </ol>
+    <div class="legend" aria-label="Legenda das cores">
+      <span><span class="code k-HEMO">MT9</span> Hemodinâmica</span>
+      <span><span class="code k-PREV">TN11</span> Prevenção</span>
+      <span><span class="code k-CIC">M9</span> CIC</span>
+      <span><span class="code k-RECOBRO">T4</span> Recobro</span>
+      <span><span class="code k-PACES">MT44</span> Paces</span>
+      <span><span class="code">M4<span class="mc">Med Cir</span></span> Med Cir</span>
+      <span><span class="code k-REAB">MT35</span> Reabilitação</span>
+      <span><span class="code k-ENSINOS">T26</span> Ensinos</span>
+      <span><span class="code k-BLOCK">L</span> Férias / ausência</span>
+      <span><span class="code k-EXTRA">T1</span> Extra</span>
+    </div>
+    <p class="small muted" style="margin:0">As cores dizem o posto; a mesma sigla pode ter cores diferentes (um M4 pode ser recobro, CIC ou Med Cir).</p>
+    <details>
+      <summary class="small"><strong>Todas as siglas e horários</strong></summary>
+      <div id="codes-table" class="small" style="overflow-x:auto;margin-top:8px"></div>
+    </details>
+  </section>
+
+  <!-- 2. nome -->
+  <section class="panel" id="sec-who" hidden>
+    <div class="row spread"><div class="eyebrow">Passo 2</div><span class="pill" id="loaded-pill"></span></div>
+    <h2>Quem és?</h2>
+    <input type="search" id="who-q" placeholder="Procurar nome ou n.º mecanográfico" autocomplete="off">
+    <div class="people" id="people"></div>
+    <details id="warn-box" hidden><summary class="small muted">Avisos da leitura do PDF</summary><ul class="small muted" id="warn-list"></ul></details>
+  </section>
+
+  <!-- 3. calendario -->
+  <section class="panel" id="sec-cal" hidden>
+    <div class="row spread"><div class="eyebrow">Passo 3</div><button id="change-who" class="small">Mudar pessoa</button></div>
+    <h2 id="cal-title">O teu horário</h2>
+    <p class="muted small" style="margin:0">Toca num dia para marcar o turno a libertar ou para indicar que não podes trabalhar.</p>
+    <div id="months"></div>
+  </section>
+
+  <!-- 4. resultados -->
+  <section class="panel" id="sec-res" hidden>
+    <div class="eyebrow">Resultados</div>
+    <h2>Trocas possíveis</h2>
+    <div class="note small">Nesta fase a app só conhece as tuas preferências. Os colegas aparecem porque o horário e as regras o permitem; confirma sempre com eles e com a chefia.</div>
+    <div id="results" class="unit" style="gap:22px"></div>
+  </section>
+</div>
+
+<div class="bar" id="bar" hidden>
+  <div class="inner">
+    <span class="small muted" id="bar-info"></span>
+    <button class="primary" id="go" disabled>Procurar trocas</button>
+  </div>
+</div>
+
+<div class="scrim" id="scrim" hidden></div>
+<div class="sheet" id="sheet" hidden role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+  <div class="inner">
+    <div class="row spread"><h2 id="sheet-title"></h2><button id="sheet-close" class="primary">Guardar</button></div>
+    <div id="sheet-body" style="display:flex;flex-direction:column;gap:10px"></div>
+  </div>
+</div>
+
+<script type="module">
+const PDFJS_BASES = window.__PDFJS_BASE ? [window.__PDFJS_BASE] : ['./','https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/','https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/','https://unpkg.com/pdfjs-dist@4.10.38/build/'];
+
+/* ======================= Regras do serviço ======================= */
+// identificadores codificados: cada pessoa é reconhecida por uma impressão digital do seu número
+const cyrb53=(str,seed=7)=>{let h1=0xdeadbeef^seed,h2=0x41c6ce57^seed;for(let i=0,ch;i<str.length;i++){ch=str.charCodeAt(i);h1=Math.imul(h1^ch,2654435761);h2=Math.imul(h2^ch,1597334677);}h1=Math.imul(h1^(h1>>>16),2246822507);h1^=Math.imul(h2^(h2>>>13),3266489909);h2=Math.imul(h2^(h2>>>16),2246822507);h2^=Math.imul(h1^(h1>>>13),3266489909);return 4294967296*(2097151&h2)+(h1>>>0);};
+const RULES={"101p8qclzyj":"b","1278qeeih7t":"a","135uttkqjs9":"r","137jv17a697":"ir","14ik80lk27a":"eu","15t80g8ygka":"b","18pw6hbz48x":"a","1a8l6l9jld6":"r","1akhrq1c69p":"c","1b8jgoqx1to":"b","1cwz47f5w8d":"eru","1ht6gip9wzv":"eu","1i0onv8mweh":"b","1obwmfh2ws8":"b","1roop9nady4":"ir","1t541s2cjsq":"cfr","1yl1pwyx682":"a","239v1y7kbfz":"eru","27u0o5z0ltn":"c","2824gwsrw1v":"ir","2831vl901mw":"cgntz","2bwwk9fcc2j":"ir","2d0kmrfasyx":"a","2mn28jdj1f":"frw","30s7zfxnf4":"x","4cguqb8k12":"a","58mf8duvfu":"hr","bpj7c9rx8b":"ir","jo22qnct9x":"crw","jvl3739zoc":"a","n3zhm0b8ji":"a","oxsghnc0lj":"b","rcwz5npcm1":"dr","rj2k07tsr7":"mr","uy00hqpp52":"i","xj1xmnq0kl":"br","y8nrski9a":"hr"};
+const _hc=new Map();
+const has=(num,c)=>{ let k=_hc.get(num); if(k===undefined){ k=cyrb53('tt|'+num).toString(36); _hc.set(num,k); } const v=RULES[k]; return !!v && v.includes(c); };
+const UCIC_GROUPS = new Set(['ENFER_UCIC','ENFEMC_UCI','ENF_UCIC','ENFESC_UCI']);
+const FI_SERVICE_MIN = 5;
+
+// horários (minutos desde as 00:00 do dia do turno)
+const TIMES = {M1:[480,900],M12:[420,900],M19:[480,780],M2:[480,870],M4:[480,840],M9:[480,960],MT1:[480,1230],MT115:[420,1200],MT13:[480,1140],MT20:[480,1020],
+ MT25:[420,930],MT35:[540,960],MT372:[420,1080],MT43:[420,1020],MT44:[660,1140],MT45:[420,1140],MT5:[480,1200],MT51:[660,1200],MT66:[660,1020],MT9:[480,1080],
+ MTN:[480,1920],N1:[1200,1950],N10:[1140,1920],N4:[1200,1920],T1:[840,1230],T17:[840,1140],T26:[780,1200],T27:[840,1080],T4:[840,1200],T52:[780,1230],
+ TN1:[840,1950],TN11:[1080,1920],TN3:[840,1920]};
+const OFF = new Set(['D','DC','DS','F','Fe']);
+const BLOCK = new Set(['L','LP','A','Cgs','No']);
+
+const AREA_LABEL = {HEMO:'Hemodinâmica',PREV:'Prevenção',CIC:'CIC',REAB:'Reabilitação',ENSINOS:'Ensinos',RECOBRO:'Recobro',PACES:'Paces',MEDCIR:'Med Cir',UCIC:'UCIC',INT:'Internamento',EXTRA:'Extra'};
+const LVL_LABEL = {1:'Ideal',2:'Aceitável',3:'Pouco desejável',4:'Último recurso',5:'Requer autorização da chefia',6:'Requer autorização da chefia · última hipótese'};
+const MONTHS = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+const MON_AB = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+const WD = ['dom','seg','ter','qua','qui','sex','sáb'];
+
+/* ======================= Datas e feriados ======================= */
+const dayMs = 86400000;
+const dkey = t => new Date(t).toISOString().slice(0,10);
+function easter(y){const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),mo=Math.floor((h+l-7*m+114)/31),da=((h+l-7*m+114)%31)+1;return Date.UTC(y,mo-1,da)}
+const holCache={};
+function holidays(y){ if(holCache[y]) return holCache[y]; const e=easter(y); const s=new Set([
+  [1,1],[4,25],[5,1],[6,10],[8,15],[10,5],[11,1],[11,11],[12,1],[12,8],[12,25]].map(([m,d])=>dkey(Date.UTC(y,m-1,d))));
+  [e-47*dayMs,e-2*dayMs,e,e+60*dayMs].forEach(t=>s.add(dkey(t))); return holCache[y]=s; }
+const isHoliday = t => holidays(new Date(t).getUTCFullYear()).has(dkey(t));
+const wday = t => new Date(t).getUTCDay();
+function fmtDate(t){const d=new Date(t);return `${WD[d.getUTCDay()]} ${d.getUTCDate()} ${MON_AB[d.getUTCMonth()]}`}
+const hm = m => {m=((m%1440)+1440)%1440;return `${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`};
+const fmtH = min => { const s=min<0?'−':'+'; min=Math.abs(min); const h=Math.floor(min/60), m=min%60; return `${s}${h}h${m?String(m).padStart(2,'0'):''}`; };
+
+/* ======================= Leitura do PDF ======================= */
+let pdfjs=null;
+async function loadPdfjs(){
+  if(pdfjs) return pdfjs; let lastErr;
+  for(const base of PDFJS_BASES){
+    try{ const lib=await import(base+'pdf.min.mjs'); lib.GlobalWorkerOptions.workerSrc=base+'pdf.worker.min.mjs'; pdfjs=lib; return lib; }
+    catch(e){ lastErr=e; console.warn('pdf.js falhou em',base,e); }
+  }
+  throw new Error('Não consegui carregar o leitor de PDF (verifica a ligação à internet). '+(lastErr&&lastErr.message||''));
+}
+
+const BG_REF = [
+  ['none',[255,255,255]],['none',[200,200,200]],['none',[238,238,238]],['none',[243,243,243]],['none',[245,245,245]],['none',[223,231,239]],['none',[244,229,154]],['none',[128,128,128]],['none',[51,51,51]],
+  ['HEMO',[209,128,46]],['PREV',[255,128,0]],['CIC',[0,128,255]],['FI',[31,143,255]],['REAB',[128,128,255]],['ENSINOS',[255,255,128]],
+  ['RECOBRO',[255,0,0]],['MEDCIR',[255,128,255]],['EXTRA',[0,128,0]]];
+const FG_REF = [['black',[0,0,0]],['black',[51,51,51]],['green',[0,255,0]],['green',[128,255,0]],['red',[173,30,58]],['white',[255,255,255]]];
+const d2 = (a,b)=>(a[0]-b[0])**2+(a[1]-b[1])**2+(a[2]-b[2])**2;
+const nearest = (c,refs)=>{let best=null,bd=1e9;for(const [n,r] of refs){const d=d2(c,r);if(d<bd){bd=d;best=n}}return [best,Math.sqrt(bd)]};
+
+function makeSampler(img, W, H, S){
+  const px = img.data;
+  return function(x0,y0,x1,y1){
+    const X0=Math.max(0,Math.round(x0*S)),X1=Math.min(W-1,Math.round(x1*S)),Y0=Math.max(0,Math.round(y0*S)),Y1=Math.min(H-1,Math.round(y1*S));
+    const hist=new Map(); const pts=[];
+    for(let y=Y0;y<=Y1;y++)for(let x=X0;x<=X1;x++){const i=(y*W+x)*4;const c=[px[i],px[i+1],px[i+2]];pts.push(c);const k=(c[0]>>4)<<8|(c[1]>>4)<<4|(c[2]>>4);hist.set(k,(hist.get(k)||0)+1)}
+    let bk=null,bn=-1;for(const [k,n] of hist) if(n>bn){bn=n;bk=k}
+    const acc=[0,0,0]; let an=0; for(const c of pts){ if(((c[0]>>4)<<8|(c[1]>>4)<<4|(c[2]>>4))===bk){acc[0]+=c[0];acc[1]+=c[1];acc[2]+=c[2];an++} }
+    const bg=acc.map(v=>Math.round(v/Math.max(1,an)));
+    let fg=bg,fd=-1;for(const c of pts){const d=d2(c,bg);if(d>fd){fd=d;fg=c}}
+    return {bg,fg,contrast:Math.sqrt(fd)};
+  };
+}
+
+// classificação tolerante a pequenas diferenças de cor entre navegadores
+function classFg(c){ const [r,g,b]=c; if(r>215&&g>215&&b>215) return 'white'; if(g>140&&g>r+40&&g>b+80) return 'green'; if(r>120&&g<90&&b<110&&r>g+50) return 'red'; return 'black'; }
+const PREV_CODES=new Set(['MTN','TN11','N10','TN3','Prv']);
+function classBg(c,fg,code){
+  const [r,g,b]=c, mx=Math.max(r,g,b), mn=Math.min(r,g,b);
+  const green=classFg(fg)==='green';
+  if(PREV_CODES.has(code) && code!=='MTN') return 'PREV';
+  if(mx-mn<45) return (green&&PREV_CODES.has(code))?'PREV':'none';
+  if(r>200&&g>200&&b<140) return 'ENSINOS';
+  if(r>150&&r>=g&&g>=b&&r-b>110&&g>60&&g<190){   // laranja (prevenção) ou castanho (hemodinâmica)
+    if(PREV_CODES.has(code)) return 'PREV';
+    if(code==='MT9') return 'HEMO';
+    return green?'PREV':'HEMO'; }
+  if(r>190&&g<80&&b<80) return 'RECOBRO';
+  if(r>190&&b>190&&g<190) return 'MEDCIR';
+  if(g>90&&r<70&&b<70) return 'EXTRA';
+  if(r>200&&g>200) return 'none';
+  if(b>190&&r<80) return (code==='Fi'||/^\d+h$/.test(code))?'FI':'CIC';
+  if(b>190&&r>=80&&g>=80&&r<190&&g<190) return 'REAB';
+  return nearest(c,BG_REF)[0];
+}
+
+async function readPdf(buf){
+  const lib = await loadPdfjs();
+  const doc = await lib.getDocument({data:buf,isEvalSupported:false}).promise;
+  const page = await doc.getPage(1);
+  const vp1 = page.getViewport({scale:1});
+  const S = 5;
+  const vp = page.getViewport({scale:S});
+  const canvas = document.createElement('canvas'); canvas.width=Math.ceil(vp.width); canvas.height=Math.ceil(vp.height);
+  const ctx = canvas.getContext('2d',{willReadFrequently:true});
+  await page.render({canvasContext:ctx,canvas,viewport:vp}).promise;
+  const img = ctx.getImageData(0,0,canvas.width,canvas.height);
+  const sample = makeSampler(img,canvas.width,canvas.height,S);
+  const tc = await page.getTextContent();
+  const toks=[];
+  for(const it of tc.items){ const str=(it.str||'').trim(); if(!str) continue;
+    const [vx,vy]=vp1.convertToViewportPoint(it.transform[4],it.transform[5]);
+    const h = it.height || Math.hypot(it.transform[2],it.transform[3]);
+    toks.push({s:str,x:vx,y:vy,w:it.width,h}); }
+  canvas.width=canvas.height=1;
+  return parseTokens(toks, sample);
+}
+
+function parseTokens(toks, sample){
+  const warn=[];
+  const all = toks.map(t=>t.s).join(' ');
+  const mm = all.match(/(janeiro|fevereiro|março|marco|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro)\s+de\s+(\d{4})/i);
+  if(!mm) throw new Error('Não encontrei o mês e o ano no PDF. Confirma que é o horário exportado do SISQUAL.');
+  const month = MONTHS.indexOf(mm[1].toLowerCase().replace('marco','março')); const year=+mm[2];
+  const first = toks.find(t=>/^1-[a-zç]{3}$/i.test(t.s));
+  if(!first) throw new Error('Não encontrei a linha dos dias no PDF.');
+  const hdr = toks.filter(t=>Math.abs(t.y-first.y)<1.2 && /^\d{1,2}(-[a-zç]{3})?$/i.test(t.s)).sort((a,b)=>a.x-b.x);
+  const fi = hdr.indexOf(first);
+  const cols = hdr.map((t,i)=>{ const n=parseInt(t.s,10); let ts;
+    if(i<fi) ts=Date.UTC(year,month,1)-(fi-i)*dayMs; else ts=Date.UTC(year,month,n);
+    return {cx:t.x+t.w/2, t:ts}; });
+  // check sequence
+  for(let i=1;i<cols.length;i++) if(cols[i].t-cols[i-1].t!==dayMs) warn.push('Sequência de dias irregular no cabeçalho.');
+  const colW = (cols[cols.length-1].cx-cols[0].cx)/(cols.length-1);
+  const left = cols[0].cx - colW*0.75, right = cols[cols.length-1].cx + colW*0.75;
+  const footer = toks.find(t=>t.s==='Manhã' && t.y>first.y);
+  const yMax = footer? footer.y-1 : 1e9;
+  // group headers and employees
+  const leftToks = toks.filter(t=>t.x<left-2 && t.y>first.y+1 && t.y<yMax);
+  const lines = [];
+  for(const t of leftToks.sort((a,b)=>a.y-b.y||a.x-b.x)){ let L=lines.find(l=>Math.abs(l.y-t.y)<1.0); if(!L){L={y:t.y,t:[]};lines.push(L)} L.t.push(t); }
+  lines.sort((a,b)=>a.y-b.y);
+  const people=[]; let grp={code:'',label:''};
+  for(const L of lines){ L.t.sort((a,b)=>a.x-b.x); const f=L.t[0];
+    if(/^\d{5,7}$/.test(f.s)){ const name=L.t.slice(1).filter(t=>t.x<left-2).map(t=>t.s).join(' ').replace(/\s+/g,' ').trim();
+      people.push({num:f.s,name,group:grp.code,groupLabel:grp.label,y:f.y,cells:new Map()}); }
+    else { grp={code:f.s,label:L.t.slice(1).map(t=>t.s).join(' ')}; }
+  }
+  if(!people.length) throw new Error('Não encontrei enfermeiros no PDF.');
+  // code tokens
+  const body = toks.filter(t=>{const cx=t.x+t.w/2;return cx>left&&cx<right&&t.y>first.y+2&&t.y<yMax});
+  let lost=0;
+  for(const t of body){
+    let best=null,bd=99; for(const p of people){const d=Math.abs(p.y-t.y);if(d<bd){bd=d;best=p}}
+    if(!best||bd>3.6){lost++;continue}
+    const cx=t.x+t.w/2; let ci=0,cd=1e9; cols.forEach((c,i)=>{const d=Math.abs(c.cx-cx);if(d<cd){cd=d;ci=i}});
+    const key=cols[ci].t; if(!best.cells.has(key)) best.cells.set(key,[]);
+    let bgc=[255,255,255], fgc=[0,0,0];
+    if(sample){ const band=sample(t.x+t.w*0.15, t.y+t.h*0.28, t.x+t.w*0.85, t.y+t.h*0.52); // faixa só com o fundo, por baixo das letras
+      const glyph=sample(t.x+0.25, t.y-t.h*0.72, t.x+t.w-0.25, t.y-t.h*0.05);
+      bgc=band.bg; let fd=-1; fgc=glyph.fg; fgc=glyph.fg; }
+    best.cells.get(key).push({s:t.s,x:t.x,bg:classBg(bgc,fgc,t.s),fg:classFg(fgc),rawbg:bgc,rawfg:fgc});
+  }
+  if(lost) warn.push(`${lost} códigos não foram associados a nenhuma pessoa.`);
+  return {month,year,dates:cols.map(c=>c.t),people:people.map(p=>({num:p.num,name:p.name,group:p.group,groupLabel:p.groupLabel,cells:p.cells})),warn};
+}
+
+/* ======================= Modelo ======================= */
+function homeArea(p){
+  if(UCIC_GROUPS.has(p.group)) return 'UCIC';
+  if(p.group==='ENFER_INT') return 'REAB';
+  if(p.group==='CITT') return /\(UCIC\)/i.test(p.name)?'UCIC':'INT';
+  if(p.group==='Enf'||p.group==='ENFESC_INT') return 'INT';
+  if(/UCIC/i.test(p.groupLabel)) return 'UCIC';
+  return 'INT';
+}
+function cellToItems(tokens, person){
+  tokens = tokens.slice().sort((a,b)=>a.x-b.x);
+  const out={items:[],blocked:false,fi:false,off:[],raw:tokens.map(t=>t.s).join(' ')};
+  for(let i=0;i<tokens.length;i++){
+    const t=tokens[i]; let s=t.s;
+    if(s==='Med'||s==='Cir'||s==='Med Cir'||s==='MedCir'){ const last=out.items[out.items.length-1]; if(last){last.area='MEDCIR'; last.medcir=true} continue; }
+    let medcir=false; const mc=s.match(/^(.*?)(Med ?Cir)$/); if(mc){s=mc[1];medcir=true}
+    const fim=s.match(/^(.*?)(Fi|\d+h)$/); if(fim && fim[1]!==s){ out.fi=true; s=fim[1]; if(!s) continue; }
+    if(s==='Fi'||/^\d+h$/.test(s)||t.bg==='FI'&&!TIMES[s]){ out.fi=true; continue; }
+    if(BLOCK.has(s)){ out.blocked=true; out.off.push(s); continue; }
+    if(OFF.has(s)){ out.off.push(s); continue; }
+    let area, prev=false, extra=false;
+    if(t.bg==='EXTRA'){extra=true}
+    if(t.bg==='PREV'){ area='PREV'; prev=true; }
+    else if(t.bg==='HEMO') area='HEMO';
+    else if(t.bg==='CIC') area='CIC';
+    else if(t.bg==='REAB') area='REAB';
+    else if(t.bg==='ENSINOS') area='ENSINOS';
+    else if(t.bg==='RECOBRO') area='RECOBRO';
+    else if(t.fg==='green') area='PACES';
+    else area=person.home;
+    if(medcir) area='MEDCIR';
+    const tm = TIMES[s];
+    out.items.push({code:s,area,prev,extra,fixed:!tm,s:tm?tm[0]:480,e:tm?tm[1]:1200,medcir});
+  }
+  return out;
+}
+
+let DATA=null; // {dates:[t], people:[...], warn:[]}
+function buildModel(parsed){
+  const dateSet=new Set(); parsed.forEach(p=>p.dates.forEach(t=>dateSet.add(t)));
+  const dates=[...dateSet].sort((a,b)=>a-b);
+  const idx=new Map(dates.map((t,i)=>[t,i]));
+  const byNum=new Map(); const warn=[];
+  // later PDFs (by month) override overlapping days
+  const ordered = parsed.slice().sort((a,b)=>(a.year*12+a.month)-(b.year*12+b.month));
+  for(const P of ordered){ warn.push(...P.warn.map(w=>`${MONTHS[P.month]}: ${w}`));
+    const own = new Set(P.dates.filter(t=>new Date(t).getUTCMonth()===P.month));
+    for(const pp of P.people){
+      let p=byNum.get(pp.num); if(!p){p={num:pp.num,name:pp.name,group:pp.group,groupLabel:pp.groupLabel,days:new Map()};p.home=homeArea(p);byNum.set(pp.num,p)}
+      for(const [t,tokens] of pp.cells){ if(!own.has(t) && p.days.has(t)) continue; p.days.set(t,cellToItems(tokens,p)); }
+    }
+  }
+  const people=[...byNum.values()].filter(p=>!has(p.num,'x'));
+  // Fi sozinho
+  const fiCount=new Map();
+  for(const p of people) for(const [t,c] of p.days) if(c.fi && !c.items.length && !c.blocked) fiCount.set(t,(fiCount.get(t)||0)+1);
+  for(const p of people){
+    p.blocked=new Array(dates.length).fill(false); p.base=[]; p.cellsByIdx=new Array(dates.length).fill(null);
+    for(const [t,c] of p.days){ const di=idx.get(t); p.cellsByIdx[di]=c;
+      if(c.blocked) p.blocked[di]=true;
+      if(c.fi && !c.items.length && (fiCount.get(t)||0)<FI_SERVICE_MIN) { p.blocked[di]=true; c.fiBlocked=true; }
+      c.items.forEach((it,k)=>{ const o={...it,id:`${p.num}|${di}|${k}`,di,t,owner:p.num,abs:di*1440+it.s,abe:di*1440+it.e,hours:it.e-it.s};
+        o.night = !o.prev && (it.s>=1140 || it.e>1440) && it.s>=840; o.long=o.hours>=600; o.morning=it.s<720;
+        o.label = it.code+(it.medcir?' Med Cir':''); p.base.push(o); });
+    }
+    p.base.sort((a,b)=>a.abs-b.abs);
+    // dias de folga no meio de um período de férias/licença também ficam bloqueados
+    const leave=di=>{const c=p.cellsByIdx[di]; return !!c && c.off.some(o=>o==='L'||o==='LP'||o==='A');};
+    const free=di=>{const c=p.cellsByIdx[di]; return !c || !c.items.length;};
+    // folgas coladas ao período (antes, no meio ou depois) fazem parte dele: nunca se propõe perdê-las
+    const mark=k=>{ p.blocked[k]=true; if(p.cellsByIdx[k] && !leave(k)) p.cellsByIdx[k].inLeave=true; };
+    for(let di=0;di<dates.length;di++){ if(!leave(di)) continue;
+      for(let k=di-1;k>=0&&free(k)&&!leave(k);k--) mark(k);
+      for(let k=di+1;k<dates.length&&free(k)&&!leave(k);k++) mark(k); }
+  }
+  for(const p of people) for(const [t,c] of p.days) for(const it of c.items) if(it.fixed) warn.push(`Código sem horário conhecido: ${it.code} (${p.name.split(' ')[0]}, ${fmtDate(t)}). Fica fora das trocas.`);
+  return {dates,idx,people,byNum:new Map(people.map(p=>[p.num,p])),warn:[...new Set(warn)]};
+}
+
+/* ======================= Prevenção ======================= */
+function prevParts(it){ // devolve [{type,min}]
+  const parts=[]; const t=DATA.dates[it.di];
+  const kind = tt => isHoliday(tt)?'fer':(wday(tt)===6?'sab':(wday(tt)===0?'dom':'sem'));
+  // segmento diurno até às 20:00 do próprio dia, noturno das 20:00 às 08:00
+  const dayEnd=1200;
+  if(it.s<dayEnd){ const e=Math.min(it.e,dayEnd); const k=kind(t); if(e>it.s) parts.push({type:k==='sem'?'sem-dia':`${k}-dia`,min:e-it.s}); }
+  if(it.e>dayEnd){ const s=Math.max(it.s,dayEnd); const k=kind(t); parts.push({type:`${k}-noite`,min:it.e-s}); }
+  return parts;
+}
+const PREV_TYPE_LABEL={'sem-noite':'noite de semana','sem-dia':'dia de semana','sab-dia':'sábado dia','sab-noite':'sábado noite','dom-dia':'domingo dia','dom-noite':'domingo noite','fer-dia':'feriado dia','fer-noite':'feriado noite'};
+const SPLIT_AREAS=new Set(['UCIC','INT','RECOBRO','MEDCIR','HEMO']);
+// partes de cada turno longo: [código, início, fim]
+const SPLITS={MT1:[['M2',480,870],['T1',840,1230]], MT5:[['M4',480,840],['T4',840,1200]], MT9:[['M4',480,840],['T27',840,1080]]};
+function splitPrev(it){ // MTN -> MT + N; MT -> M + T
+  if(!it) return [];
+  const mk=(suf,pc,s,e)=>({...it,id:it.id+'|'+suf,parent:it.id,half:suf,pcode:pc,s,e,abs:it.di*1440+s,abe:it.di*1440+e,hours:e-s});
+  if(it.prev){ const out=[];
+    if(it.e-it.s>=1200) out.push(mk('d','MT',it.s,1200), mk('n','N',1200,it.e));
+    if(it.s<=480 && it.e>=1200) out.push(mk('pm','M',480,840), mk('pt','T',840,1200)); // raro: prevenção em blocos de 6 h
+    return out; }
+  if(it.night || !SPLIT_AREAS.has(it.area)) return [];
+  const sp=SPLITS[it.code];
+  if(sp && it.s===sp[0][1]) return [mk('m',sp[0][0],sp[0][1],sp[0][2]), mk('t',sp[1][0],sp[1][1],sp[1][2])];
+  if(it.area!=='HEMO' && it.s<=600 && it.e>=1140){ const mEnd = it.s<=480 ? 870 : it.s+390; return [mk('m','M',it.s,mEnd), mk('t','T',840,it.e)]; }
+  return [];
+}
+
+/* ======================= Regras ======================= */
+function eligible(area,p){
+  const n=p.num;
+  switch(area){
+    case 'HEMO': case 'PREV': return has(n,'a')?1:0;
+    case 'PACES': return has(n,'b')?1:0;
+    case 'CIC': return has(n,'c')?1:0;
+    case 'MEDCIR': return (p.group==='ENFEMC_UCI'&&!has(n,'d'))?1:0;
+    case 'REAB': case 'ENSINOS': return (p.group==='ENFER_UCIC'||p.group==='ENFER_INT')?1:0;
+    case 'RECOBRO': return has(n,'r')?0:1;
+    case 'UCIC': if(has(n,'f')) return 4; return (UCIC_GROUPS.has(p.group)||has(n,'e'))?1:0;
+    case 'INT': if(has(n,'h')) return 4; if(p.home==='INT'||has(n,'g')) return 1; if(p.home==='UCIC') return 4; return 0;
+  }
+  return 0;
+}
+function finalSchedule(p, give, recv){
+  const gone=new Set(give.map(g=>g.parent||g.id));
+  const rest=[];
+  for(const pid of new Set(give.filter(g=>g.parent).map(g=>g.parent))){
+    const par=p.base.find(b=>b.id===pid); if(!par) continue;
+    const cuts=give.filter(g=>g.parent===pid).sort((a,b)=>a.s-b.s); let cur=par.s;
+    const mk=(a,b)=>({...par,id:`${par.id}|r${a}`,parent:par.id,half:'rest',s:a,e:b,abs:par.di*1440+a,abe:par.di*1440+b,hours:b-a});
+    for(const g of cuts){ if(g.s>cur) rest.push(mk(cur,g.s)); cur=Math.max(cur,g.e); }
+    if(cur<par.e) rest.push(mk(cur,par.e));
+  }
+  const arr=p.base.filter(b=>!gone.has(b.id)).concat(rest, recv.map(r=>({...r,recv:true})));
+  return arr.sort((a,b)=>a.abs-b.abs);
+}
+// períodos em que a pessoa diz que não pode (minutos desde as 00:00 do dia)
+const PERIODS={M:[420,840],T:[840,1230],N:[1200,1950]};
+function nogoHit(nogo,r){
+  for(let d=r.di-1; d<=r.di+1; d++){ const set=nogo.get(d); if(!set) continue;
+    for(const k of set){ const ws=d*1440+PERIODS[k][0], we=d*1440+PERIODS[k][1]; if(Math.min(r.abe,we)-Math.max(r.abs,ws)>30) return true; } }
+  return false;
+}
+function evaluate(p, give, recv, nogo){
+  const iv=finalSchedule(p,give,recv); const issues=[]; let lvl=1;
+  const add=(l,m)=>{ if(!issues.includes(m)) issues.push(m); if(l>lvl) lvl=l; };
+  const nd=DATA.dates.length;
+  const who=nameOf(p.num);
+  const lab=o=>`${shortCode(o)}${o.prev&&!o.half?' (prev.)':''} ${fmtDate(o.t)}`;
+  for(const r of iv){ if(!r.recv) continue;
+    if(r.di < TODAY_IDX) return null;
+    if(has(p.num,'m') && !r.prev && r.s<720) return null;
+    if(has(p.num,'n') && !r.prev && r.night) return null;
+    if(has(p.num,'t') && !r.prev && !r.night){
+      const day=iv.filter(o=>!o.prev&&!o.night&&o.di===r.di);
+      if(day.some(o=>o.s<720) && day.some(o=>o.e>=1140)) return null; }
+    if(has(p.num,'w') && !r.prev && !r.night && [0,6].includes(wday(DATA.dates[r.di]))){
+      const day=iv.filter(o=>!o.prev&&!o.night&&o.di===r.di);
+      if(day.some(o=>o.s<720) && day.some(o=>o.e>=1140)) return null; }
+    for(let d=r.di; d<=Math.floor((r.abe-1)/1440) && d<nd; d++){ if(p.blocked[d]) return null; }
+    if(nogo && nogoHit(nogo,r)) return null;
+    for(const o of iv){ if(o===r) continue; const ov=Math.min(r.abe,o.abe)-Math.max(r.abs,o.abs); if(ov<=0) continue;
+      // prevenção e turno de dia podem sobrepor-se até 30 min (ex.: prevenção T 14–20 a quem faz M até às 14:30)
+      const pv=r.prev?r:(o.prev?o:null), pr=r.prev?o:r;
+      if(pv && !pr.prev && pr.night && ov<=30 && pv.abs>=pr.abs){ add(5,`${who}: prevenção ${shortCode(pv)} (${hm(pv.s)}–${hm(pv.e)}) logo a seguir à ${pr.code} de ${fmtDate(pr.t)}`); continue; }
+      if(pv && !pr.prev && !pr.night && ov<=30){ add(4,`${who}: prevenção ${shortCode(pv)} (${hm(pv.s)}–${hm(pv.e)}) sobreposta ${ov} min ao ${pr.code} de ${fmtDate(pr.t)}`); continue; }
+      return null; }
+    let a=null,b=null; for(const o of iv){ if(o===r) continue; if(o.abe<=r.abs && (!a||o.abe>a.abe)) a=o; if(o.abs>=r.abe && (!b||o.abs<b.abs)) b=o; }
+    for(const [x,y] of [[a,r],[r,b]]){ if(!x||!y) continue; const gap=y.abs-x.abe; const pair=`${lab(x)} seguido de ${lab(y)}`;
+      if(x.prev){ if(!y.prev && gap<300 && (x.abe%1440)<=600){ if(y.area==='HEMO') add(6,`${who}: MT9 na hemodinâmica a seguir a uma prevenção (${pair})`); else add(5,`${who}: turno de manhã a seguir a uma prevenção (${pair})`); } }
+      else if(x.night){ if(y.prev){ if(gap<660 && (y.s%1440)<720) add(5,`${who}: prevenção de manhã a seguir a uma noite (${pair})`); } else if(gap<300) return null; else if(gap<660) add(4,`${who}: tarde no dia de descanso a seguir a uma noite (${pair})`); }
+      else if(!y.prev && gap<=30 && x.di===y.di && !y.night && (y.abe-x.abs)<=810){ /* M seguida de T no mesmo dia = equivalente a um MT */ }
+      else if(!y.prev && gap<660){ if(y.night && Math.floor(y.abs/1440)===Math.floor(x.abs/1440)) add(4,`${who}: manhã e noite no mesmo dia (${pair})`); else add(4,`${who}: menos de 11 h de descanso (${pair})`); }
+    }
+    const shiftOn=d=>iv.filter(o=>!o.prev&&o.di===d);
+    const worked=d=>shiftOn(d).length>0;
+    const nightOn=d=>iv.some(o=>o.night&&o.di===d);
+    const seq=(from,to)=>{ const out=[]; for(let d=from; d<=to; d++) shiftOn(d).forEach(o=>out.push(lab(o))); return out.join(', '); };
+    if(r.night){ let lo=r.di,hi=r.di; while(lo-1>=0&&nightOn(lo-1))lo--; while(hi+1<nd&&nightOn(hi+1))hi++; const run=hi-lo+1;
+      if(run>=4) return null; if(run===3) add(4,`${who}: três noites seguidas (${seq(lo,hi)})`); else if(run===2) add(2,`${who}: duas noites seguidas (${seq(lo,hi)})`); }
+    if(!r.prev){ let lo=r.di,hi=r.di; while(lo-1>=0&&worked(lo-1))lo--; while(hi+1<nd&&worked(hi+1))hi++; const run=hi-lo+1;
+      if(run>6) add(4,`${who}: ${run} dias de trabalho seguidos (${fmtDate(DATA.dates[lo])} a ${fmtDate(DATA.dates[hi])})`);
+      const longOn=d=>shiftOn(d).some(o=>o.long);
+      if(!r.night || !(nightOn(r.di-1)||nightOn(r.di+1))){
+        if((r.long&&(worked(r.di-1)||worked(r.di+1))) || longOn(r.di-1) || longOn(r.di+1)){
+          const a1=Math.max(lo,r.di-1), b1=Math.min(hi,r.di+1); add(2,`${who}: turnos longos em dias seguidos (${seq(a1,b1)})`); } } }
+  }
+  return {lvl,issues};
+}
+
+/* ======================= Pesquisa ======================= */
+let TODAY_IDX=0;
+function tradeables(p, withHalves, with6h){
+  const out=[]; for(const b of p.base){ if(b.fixed||b.di<TODAY_IDX) continue; out.push(b);
+    if(withHalves) out.push(...splitPrev(b).filter(h=>with6h||(h.half!=='pm'&&h.half!=='pt'))); } return out;
+}
+function unitOf(items){ // pacote do utilizador
+  return {items, areas:[...new Set(items.map(i=>i.area))], di:items[0].di, hours:items.reduce((s,i)=>s+(i.prev?0:i.hours),0)};
+}
+function eligUnit(items,p){ let l=1; for(const it of items){ const e=eligible(it.area,p); if(!e) return 0; l=Math.max(l,e);} return l; }
+function presentialMin(arr){ return arr.reduce((s,i)=>s+(i.prev?0:i.hours),0); }
+
+function scoreSolution(moves, evals){
+  // moves: [{from,to,items}]
+  let lvl=1; const issues=[];
+  const add=(l,m)=>{ if(!issues.includes(m)) issues.push(m); if(l>lvl) lvl=l; };
+  for(const e of evals){ if(e.lvl>lvl) lvl=e.lvl; e.issues.forEach(m=>{ if(!issues.includes(m)) issues.push(m); }); }
+  const persons=new Map();
+  for(const m of moves){ for(const who of [m.from,m.to]) if(!persons.has(who)) persons.set(who,{give:[],recv:[]});
+    persons.get(m.from).give.push(...m.items); persons.get(m.to).recv.push(...m.items); }
+  const deltas=[]; let sumAbs=0; const prevInfo=[];
+  for(const [num,g] of persons){ const d=presentialMin(g.recv)-presentialMin(g.give); deltas.push({num,d}); sumAbs+=Math.abs(d);
+    if(Math.abs(d)>150) add(3,'Diferença de horas grande'); else if(d!==0) add(2,'Pequena diferença de horas');
+    if(has(num,'z') && d>0) add(4,`Restrição pessoal de horas de um dos colegas envolvidos`);
+    const pg={},pr={}; g.give.filter(i=>i.prev).forEach(i=>prevParts(i).forEach(x=>pg[x.type]=(pg[x.type]||0)+x.min));
+    g.recv.filter(i=>i.prev).forEach(i=>prevParts(i).forEach(x=>pr[x.type]=(pr[x.type]||0)+x.min));
+    const ks=new Set([...Object.keys(pg),...Object.keys(pr)]); let unbal=false; for(const k of ks) if((pg[k]||0)!==(pr[k]||0)) unbal=true;
+    if(ks.size) prevInfo.push({num,give:pg,recv:pr,unbal});
+    if(unbal) add(4,'Prevenção a pagar: alguém dá e recebe prevenção de horas ou tipo diferentes');
+    const gh=g.give.some(i=>i.area==='HEMO'), rh=g.recv.some(i=>i.area==='HEMO'); if(gh!==rh && g.give.length && g.recv.length) add(2,'Hemodinâmica trocada por outro posto');
+  }
+  for(const m of moves) if(m.items.some(i=>i.extra)) add(4,'Envolve um turno extra');
+  if(moves.some(m=>m.items.some(i=>i.half==='pm'||i.half==='pt'))) add(3,'Prevenção dividida em blocos de 6 h (pouco habitual)');
+  // pares a evitar
+  for(const m of moves){ for(const A of [{area:'UCIC',c:'u'},{area:'INT',c:'i'}]){ if(!has(m.to,A.c)) continue;
+    for(const it of m.items){ if(it.area!==A.area) continue;
+      for(const op of DATA.people){ if(op.num===m.to || !has(op.num,A.c)) continue; const other=op.num;
+        const gave=new Set(moves.filter(x=>x.from===other).flatMap(x=>x.items.map(i=>i.parent||i.id)));
+        const got=moves.filter(x=>x.to===other).flatMap(x=>x.items);
+        const sched=op.base.filter(b=>!gave.has(b.id)).concat(got);
+        if(sched.some(o=>o.area===A.area&&!o.prev&&o.abs<it.abe&&it.abs<o.abe)){ add(4,`Combinação de equipa pouco recomendada (${shortCode(it)} ${fmtDate(it.t)})`); }
+      } } } }
+  // preferências: N por N, M por M…; dia de semana por dia de semana, fim de semana/feriado por fim de semana/feriado
+  const cat=i=> i.prev ? 'P'+(i.e-i.s) : i.night ? 'N' : (i.s<720 && i.e>=1140) ? 'MT' : i.s<720 ? 'M' : 'T';
+  const dayT=i=>{ const t=DATA.dates[i.di]; return (wday(t)===0||wday(t)===6||isHoliday(t))?'FDS':'SEM'; };
+  const key=(arr,f)=>arr.map(f).sort().join(',');
+  let mismatch=0, sameShift=true, sameDay=true;
+  for(const [,g] of persons){ if(!g.give.length||!g.recv.length){ sameShift=false; sameDay=false; mismatch+=2; continue; }
+    if(key(g.give,cat)!==key(g.recv,cat)){ mismatch+=1; sameShift=false; }
+    if(key(g.give,dayT)!==key(g.recv,dayT)){ mismatch+=1; sameDay=false; } }
+  return {lvl,issues,deltas,sumAbs,people:persons.size,prevInfo,mismatch,sameShift,sameDay};
+}
+
+function search(me, unitItems, nogo, budgetMs=3500){
+  const t0=performance.now(); const sols=[]; const seen=new Set(); const gives=[];
+  const unitHrs=presentialMin(unitItems);
+  const others=DATA.people.filter(p=>p.num!==me.num);
+  const tradeCache=new Map(); const withHalves=unitItems.some(i=>i.half); // partes de turnos só entram quando estou a trocar uma parte
+  const with6h=unitItems.some(i=>i.half==='pm'||i.half==='pt');
+  const tr=p=>{ if(!tradeCache.has(p.num)) tradeCache.set(p.num,tradeables(p,withHalves,with6h)); return tradeCache.get(p.num); };
+  const giveKinds=new Set(unitItems.map(i=>!!i.prev));
+  const push=(moves,evals,extraLvl)=>{
+    // (bloco pago só em parte: é proposto na mesma, com o aviso de horas por acertar)
+    const key=moves.map(m=>`${m.from}>${m.to}:${m.items.map(i=>i.id).join('+')}`).sort().join('|'); if(seen.has(key)) return; seen.add(key);
+    const sc=scoreSolution(moves,evals); if(extraLvl&&extraLvl.l>sc.lvl){sc.lvl=extraLvl.l} if(extraLvl) sc.issues.push(...extraLvl.m);
+    sols.push({moves,...sc});
+  };
+  const eligNote=(l,p)=> l===4? {l:4,m:[`${p.name.split(' ')[0]} raramente faz este posto`]} : null;
+  const mergeNotes=(...ns)=>{ const v=ns.filter(Boolean); if(!v.length) return null; return {l:Math.max(...v.map(x=>x.l)),m:v.flatMap(x=>x.m)}; };
+  const within=()=>performance.now()-t0<budgetMs;
+  const uS=Math.min(...unitItems.map(i=>i.abs)), uE=Math.max(...unitItems.map(i=>i.abe));
+  const backToMe=s=>s.abs<uE && uS<s.abe; // receber de volta no horário que quero libertar não serve
+  const same=(a,b)=>a.di===b.di&&a.s===b.s&&a.e===b.e&&a.area===b.area&&!!a.prev===!!b.prev;
+  const pointless=(give,recv)=>recv.some(r=>give.some(g=>same(g,r)));
+  // prevenção só se troca por prevenção; turno presencial só por turno presencial
+  const unitKinds=new Set(unitItems.map(i=>!!i.prev));
+  const okKind=(s,prevS)=> prevS ? (!!s.prev===!!prevS.prev) : unitKinds.has(!!s.prev);
+  // nível 1: quem recebe o pacote
+  const Q1s=others.map(p=>({p,l:eligUnit(unitItems,p)})).filter(x=>x.l);
+  for(const {p:Q1,l:l1} of Q1s){
+    const solo=evaluate(Q1,[],unitItems);
+    if(solo) gives.push({p:Q1,ev:solo,el:l1});
+    // bloco por bloco: ex.: o meu MT9 + TN11 pelo MT9 + TN11 de outro dia do colega
+    if(unitItems.length>1){
+      const sig=arr=>arr.map(i=>(i.prev?'P':'W')+i.area).sort().join(',');
+      const byDay=new Map(); for(const x of tr(Q1)){ if(x.half) continue; if(!byDay.has(x.di)) byDay.set(x.di,[]); byDay.get(x.di).push(x); }
+      for(const [d,grp] of byDay){ if(grp.length!==unitItems.length || sig(grp)!==sig(unitItems)) continue;
+        if(grp.some(backToMe) || grp.some(x=>!eligible(x.area,me)) || pointless(grp,unitItems)) continue;
+        const e1=evaluate(Q1,grp,unitItems); if(!e1) continue; const em=evaluate(me,unitItems,grp,nogo); if(!em) continue;
+        push([{from:me.num,to:Q1.num,items:unitItems},{from:Q1.num,to:me.num,items:grp}],[e1,em],eligNote(l1,Q1)); }
+    }
+    // troca direta paga com dois turnos mais curtos do colega (ex.: uma N por duas T, ou uma T e uma M)
+    if(!unitKinds.has(true) && unitHrs>=600){
+      const pool=[]; for(const x of tr(Q1)){ if(x.prev||x.half) continue; pool.push(x); pool.push(...splitPrev(x)); }
+      const cand=pool.filter(x=>x.hours<unitHrs && !backToMe(x) && eligible(x.area,me) && !pointless([x],unitItems));
+      for(let a=0;a<cand.length;a++) for(let b=a+1;b<cand.length;b++){
+        const A=cand[a],B=cand[b]; if(A.di===B.di && A.abs<B.abe && B.abs<A.abe) continue;
+        if((A.parent||A.id)===(B.parent||B.id)) continue; // as duas metades do mesmo MT seriam o MT inteiro
+        if(Math.abs(A.hours+B.hours-unitHrs)>90) continue;
+        const e1=evaluate(Q1,[A,B],unitItems); if(!e1) continue;
+        const em=evaluate(me,unitItems,[A,B],nogo); if(!em) continue;
+        const l2=Math.max(eligible(A.area,me),eligible(B.area,me));
+        push([{from:me.num,to:Q1.num,items:unitItems},{from:Q1.num,to:me.num,items:[A,B]}],[e1,em],mergeNotes(eligNote(l1,Q1),eligNote(l2,me)));
+      }
+    }
+    for(const s2 of tr(Q1)){
+      if(!within()) break;
+      if(Math.abs(presentialMin([s2])-unitHrs)>480 && !s2.prev) continue;
+      if(!okKind(s2)||pointless([s2],unitItems)) continue;
+      const e1=evaluate(Q1,[s2],unitItems); if(!e1) continue;
+      // fecha com o utilizador
+      const lm=eligible(s2.area,me);
+      if(lm && !backToMe(s2)){ const em=evaluate(me,unitItems,[s2],nogo); if(em) push([{from:me.num,to:Q1.num,items:unitItems},{from:Q1.num,to:me.num,items:[s2]}],[e1,em],mergeNotes(eligNote(l1,Q1),eligNote(lm,me))); }
+      // cadeia de 3
+      for(const Q2 of others){ if(Q2===Q1) continue; const l2=eligible(s2.area,Q2); if(!l2) continue;
+        for(const s3 of tr(Q2)){ if(s3.id===s2.id) continue;
+          const lm3=eligible(s3.area,me); if(!lm3||!okKind(s3,s2)||backToMe(s3)||pointless([s3],[s2])) continue;
+          const e2=evaluate(Q2,[s3],[s2]); if(!e2) continue;
+          const em=evaluate(me,unitItems,[s3],nogo); if(!em) continue;
+          push([{from:me.num,to:Q1.num,items:unitItems},{from:Q1.num,to:Q2.num,items:[s2]},{from:Q2.num,to:me.num,items:[s3]}],[e1,e2,em],mergeNotes(eligNote(l1,Q1),eligNote(l2,Q2),eligNote(lm3,me)));
+        }
+        if(!within()) break;
+      }
+    }
+    if(!within()) break;
+  }
+  // MT dividido: um colega faz a M, outro a T, e eu pago um turno a cada um
+  if(unitItems.length===1 && !unitItems[0].prev && !unitItems[0].half && within()){
+    const parts=splitPrev(unitItems[0]);
+    if(parts.length===2){
+      const directFor=part=>{ const out=[];
+        for(const Q of others){ const lq=eligible(part.area,Q); if(!lq) continue;
+          const pool=[]; for(const y of tr(Q)){ if(y.prev||y.half) continue; pool.push(y); pool.push(...splitPrev(y)); }
+          for(const x of pool){ if(backToMe(x)||!eligible(x.area,me)||pointless([x],[part])) continue;
+            if(Math.abs(x.hours-part.hours)>150) continue;
+            const e=evaluate(Q,[x],[part]); if(!e) continue; out.push({Q,x,e,lq}); } }
+        out.sort((p,q)=>p.e.lvl-q.e.lvl||Math.abs(p.x.hours-part.hours)-Math.abs(q.x.hours-part.hours)); return out.slice(0,30); };
+      const LM=directFor(parts[0]), LT=directFor(parts[1]);
+      for(const A of LM) for(const B of LT){ if(A.Q===B.Q||A.x.id===B.x.id) continue;
+        if(A.x.di===B.x.di && A.x.abs<B.x.abe && B.x.abs<A.x.abe) continue;
+        const em=evaluate(me,unitItems,[A.x,B.x],nogo); if(!em) continue;
+        push([{from:me.num,to:A.Q.num,items:[parts[0]]},{from:A.Q.num,to:me.num,items:[A.x]},{from:me.num,to:B.Q.num,items:[parts[1]]},{from:B.Q.num,to:me.num,items:[B.x]}],
+          [A.e,B.e,em],mergeNotes(eligNote(A.lq,A.Q),eligNote(B.lq,B.Q)));
+        if(!within()) break; }
+    }
+  }
+  // cadeias de 4, só se houver poucas soluções boas
+  const good=sols.filter(s=>s.lvl<=2).length;
+  if(good<5 && within()){
+    outer: for(const {p:Q1,l:l1} of Q1s){
+      for(const s2 of tr(Q1)){ if(!okKind(s2)||pointless([s2],unitItems)) continue; const e1=evaluate(Q1,[s2],unitItems); if(!e1) continue;
+        for(const Q2 of others){ if(Q2===Q1) continue; const l2=eligible(s2.area,Q2); if(!l2) continue;
+          for(const s3 of tr(Q2)){ if(s3.id===s2.id||!okKind(s3,s2)||pointless([s3],[s2])) continue; const e2=evaluate(Q2,[s3],[s2]); if(!e2) continue;
+            for(const Q3 of others){ if(Q3===Q1||Q3===Q2) continue; const l3=eligible(s3.area,Q3); if(!l3) continue;
+              for(const s4 of tr(Q3)){ if(s4.id===s3.id||s4.id===s2.id||!okKind(s4,s3)||backToMe(s4)||pointless([s4],[s3])) continue; const lm=eligible(s4.area,me); if(!lm) continue;
+                const e3=evaluate(Q3,[s4],[s3]); if(!e3) continue; const em=evaluate(me,unitItems,[s4],nogo); if(!em) continue;
+                push([{from:me.num,to:Q1.num,items:unitItems},{from:Q1.num,to:Q2.num,items:[s2]},{from:Q2.num,to:Q3.num,items:[s3]},{from:Q3.num,to:me.num,items:[s4]}],[e1,e2,e3,em],mergeNotes(eligNote(l1,Q1),eligNote(l2,Q2),eligNote(l3,Q3),eligNote(lm,me)));
+              }
+            }
+            if(!within()) break outer;
+          }
+        }
+      }
+    }
+  }
+  // dar o turno sem receber outro no mês: proposto na mesma, com aviso claro
+  gives.sort((a,b)=>Math.max(a.ev.lvl,a.el)-Math.max(b.ev.lvl,b.el));
+  for(const g of gives.slice(0,15)) push([{from:me.num,to:g.p.num,items:unitItems}],[g.ev],mergeNotes({l:3,m:['Sem turno de volta neste horário: as horas ficam por acertar no mês seguinte']},eligNote(g.el,g.p)));
+  const nItems=x=>x.moves.reduce((n,m)=>n+m.items.length,0);
+  // ordem: ideais/quase ideais diretas → ideais/quase ideais com 3+ pessoas → restantes por nível
+  const tier=x=> x.lvl<=2 ? (x.people===2?0:1) : 2;
+  sols.forEach(x=>x.tier=tier(x));
+  sols.sort((a,b)=>a.tier-b.tier||a.lvl-b.lvl||a.people-b.people||a.mismatch-b.mismatch||a.sumAbs-b.sumAbs||nItems(a)-nItems(b)||a.issues.length-b.issues.length);
+  // mantém só a melhor variante de cada combinação de pessoas e dias
+  const best=new Set(); const uniq=[];
+  for(const s of sols){ const k=s.moves.map(m=>`${m.from}>${m.to}@${m.items.map(i=>i.di).join('+')}`).join('|'); if(best.has(k)) continue; best.add(k); uniq.push(s); }
+  sols.length=0; sols.push(...uniq);
+  gives.sort((a,b)=>Math.max(a.ev.lvl,a.el)-Math.max(b.ev.lvl,b.el));
+  return {sols,gives,timedOut:!within()};
+}
+
+/* ======================= Interface ======================= */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+const state={me:null,free:new Map(),nogo:new Map()}; // free: di -> Set(item ids)
+
+function shortName(p){ const parts=p.name.replace(/\(UCIC\)|\*/g,'').trim().split(/\s+/); const cap=w=>w.charAt(0)+w.slice(1).toLowerCase(); return parts.length>1?`${cap(parts[0])} ${cap(parts[parts.length-1])}`:cap(parts[0]); }
+function nameOf(num){ if(state.me&&num===state.me.num) return 'Tu'; const p=DATA.byNum.get(num); return p?shortName(p):num; }
+function shortCode(it){ if(it.half) return ({d:'MT',n:'N',m:'M',t:'T',pm:'M',pt:'T'})[it.half]||it.code; return it.code; }
+function chip(it){ const k=it.extra?'EXTRA':(it.medcir?'PLAIN':it.area); const cls=['HEMO','PREV','CIC','REAB','ENSINOS','RECOBRO','PACES','EXTRA'].includes(k)?` k-${k}`:'';
+  return `<span class="code${cls}" title="${esc(AREA_LABEL[it.area]||'')}">${esc(shortCode(it))}${it.medcir?'<span class="mc">Med Cir</span>':''}</span>`; }
+function itemText(it){ if(it.prev) return it.half?({d:'prevenção de dia',n:'prevenção de noite',pm:'prevenção de manhã (6 h)',pt:'prevenção de tarde (6 h)'})[it.half]||'prevenção':'prevenção'; const a=AREA_LABEL[it.area]||''; return it.half?`${a}, ${it.half==='m'?'manhã':'tarde'} do ${it.code}`:a; }
+
+async function handleFiles(files){
+  const st=$('#load-status'); st.hidden=false; st.innerHTML='<span class="spinner"></span> A ler o horário…';
+  try{
+    const parsed=[];
+    st.innerHTML='<span class="spinner"></span> A preparar o leitor de PDF…';
+    await loadPdfjs();
+    for(const f of files){ st.innerHTML=`<span class="spinner"></span> A ler ${esc(f.name)}…`;
+      const buf=new Uint8Array(await f.arrayBuffer()); parsed.push(await readPdf(buf)); }
+    DATA=buildModel(parsed);
+    const todayT=Date.UTC(new Date().getFullYear(),new Date().getMonth(),new Date().getDate());
+    TODAY_IDX=DATA.dates.findIndex(t=>t>=todayT); if(TODAY_IDX<0) TODAY_IDX=DATA.dates.length;
+    const months=[...new Set(parsed.map(p=>`${MONTHS[p.month]} de ${p.year}`))].join(' + ');
+    st.innerHTML=`Lido: <strong>${esc(months)}</strong> · ${DATA.people.length} enfermeiros.`;
+    $('#loaded-pill').textContent=months;
+    $('#sec-how').hidden=true; $('#sec-who').hidden=false;
+    const wb=$('#warn-box'); if(DATA.warn.length){ wb.hidden=false; $('#warn-list').innerHTML=DATA.warn.map(w=>`<li>${esc(w)}</li>`).join(''); } else wb.hidden=true;
+    renderPeople('');
+
+  }catch(e){ console.error(e); st.innerHTML=`<span style="color:var(--bad)">Não consegui ler este PDF. ${esc(e.message||e)}</span>`; }
+}
+function renderPeople(q){
+  q=q.trim().toLowerCase(); const groups=new Map();
+  for(const p of DATA.people){ if(q && !(p.name.toLowerCase().includes(q)||p.num.includes(q))) continue;
+    const g=p.groupLabel||p.group; if(!groups.has(g)) groups.set(g,[]); groups.get(g).push(p); }
+  const saved=store.get('trocas.me'); const sp=saved&&DATA.byNum.get(saved);
+  const quick = (!q && sp) ? `<div class="grp"><div class="eyebrow">Usado da última vez neste dispositivo</div><button data-num="${sp.num}"><span>${esc(shortName(sp))} <span class="muted small">${esc(sp.name)}</span></span><span class="num">${sp.num}</span></button></div>` : '';
+  $('#people').innerHTML=quick+[...groups].map(([g,ps])=>`<div class="grp"><div class="eyebrow">${esc(g)}</div>${ps.map(p=>`<button data-num="${p.num}" class="${state.me&&state.me.num===p.num?'sel':''}"><span>${esc(shortName(p))} <span class="muted small">${esc(p.name)}</span></span><span class="num">${p.num}</span></button>`).join('')}</div>`).join('')||'<p class="muted">Ninguém com esse nome.</p>';
+}
+function choose(num){
+  state.me=DATA.byNum.get(num); state.free=new Map(); state.nogo=new Map(); store.set('trocas.me',num);
+  $('#sec-who').hidden=true; $('#sec-cal').hidden=false; $('#bar').hidden=false; $('#sec-res').hidden=true;
+  $('#cal-title').textContent=`Horário de ${shortName(state.me)}`;
+  renderCal(); updateBar(); $('#sec-cal').scrollIntoView({block:'start'});
+}
+function renderCal(){
+  const me=state.me; const byMonth=new Map();
+  DATA.dates.forEach((t,di)=>{ const d=new Date(t); const k=d.getUTCFullYear()*12+d.getUTCMonth(); if(!byMonth.has(k)) byMonth.set(k,[]); byMonth.get(k).push(di); });
+  let html='';
+  for(const [k,dis] of byMonth){ if(dis.length<3) continue; const y=Math.floor(k/12), m=k%12;
+    html+=`<div class="month"><h3>${MONTHS[m].charAt(0).toUpperCase()+MONTHS[m].slice(1)} ${y}</h3><div class="cal">`+['seg','ter','qua','qui','sex','sáb','dom'].map(w=>`<div class="wd">${w}</div>`).join('');
+    const lead=(wday(DATA.dates[dis[0]])+6)%7; for(let i=0;i<lead;i++) html+='<div class="day empty"></div>';
+    for(const di of dis){ const t=DATA.dates[di]; const c=me.cellsByIdx[di]; const items=me.base.filter(b=>b.di===di);
+      const we=wday(t)===0||wday(t)===6, hol=isHoliday(t), past=di<TODAY_IDX;
+      const fr=state.free.has(di), ngSet=state.nogo.get(di), ng=!!ngSet; const ngTxt=ng?(ngSet.size===3?'não posso':'não '+['M','T','N'].filter(k=>ngSet.has(k)).join('/')):'';
+      let codes='';
+      if(c) codes+=c.off.map(o=>`<span class="code ${BLOCK.has(o)?'k-BLOCK':'k-OFF'}">${esc(o)}</span>`).join('');
+      codes+=items.map(chip).join('');
+      if(c){ if(c.fi) codes+=`<span class="code k-FI">Fi</span>`; if(c.inLeave) codes+=`<span class="code k-LEAVE">férias</span>`; }
+      html+=`<button class="day${we?' we':''}${hol?' hol':''}${past?' past':''}${fr?' free':''}${ng?' nogo':''}" data-di="${di}" ${past?'disabled':''} aria-label="${fmtDate(t)}"><span class="dn"><b>${new Date(t).getUTCDate()}</b>${hol?'<span>fer.</span>':''}</span>${codes}${fr?'<span class="flag f">libertar</span>':''}${ng?`<span class="flag n">${ngTxt}</span>`:''}</button>`;
+    }
+    html+='</div></div>';
+  }
+  $('#months').innerHTML=html;
+}
+function updateBar(){
+  const n=[...state.free.values()].reduce((s,v)=>s+v.size,0);
+  $('#bar-info').textContent= n? `${n} turno${n>1?'s':''} a libertar · ${state.nogo.size} dia${state.nogo.size===1?'':'s'} com restrições` : 'Marca pelo menos um turno a libertar';
+  $('#go').disabled=!n;
+}
+function partOptions(it){
+  const parts=splitPrev(it);
+  if(!parts.length) return [{id:it.id,code:it.code,time:`${hm(it.s)}–${hm(it.e)}`}];
+  const lab=p=>({d:'MT',n:'N',m:'M',t:'T',pm:'M',pt:'T'})[p.half];
+  const ord={pm:0,m:0,pt:1,t:1,d:2,n:3}; parts.sort((a,b)=>ord[a.half]-ord[b.half]);
+  const full={id:it.id,code:it.prev?it.code:'MT',time:`${hm(it.s)}–${hm(it.e)}`,full:true};
+  const ps=parts.map(p=>({id:p.id,code:lab(p),time:`${hm(p.s)}–${hm(p.e)}`,sub:p.pcode&&p.pcode!==lab(p)?p.pcode:''}));
+  return [...ps, full];
+}
+function openSheet(di){
+  const me=state.me, t=DATA.dates[di]; const items=me.base.filter(b=>b.di===di&&!b.fixed);
+  $('#sheet-title').textContent=fmtDate(t);
+  const sel=state.free.get(di)||new Set();
+  let h='';
+  if(items.length){
+    h+='<div class="eyebrow">O que queres libertar?</div>';
+    for(const it of items){
+      const opts=partOptions(it);
+      h+=`<div class="pick" data-item="${it.id}"><div class="pick-h">${chip(it)} <span class="tabnums">${hm(it.s)}–${hm(it.e)}</span> <span class="muted small">${esc(it.prev?'Prevenção':(AREA_LABEL[it.area]||''))}</span></div>
+        <div class="seg" role="group" aria-label="Parte do turno ${esc(it.code)}">${opts.map(o=>`<button type="button" class="segb${o.full?' full':''}" data-id="${o.id}" aria-pressed="${sel.has(o.id)}"><b>${esc(o.code)}</b><span>${o.time}</span>${o.sub?`<small>${esc(o.sub)}</small>`:''}</button>`).join('')}</div></div>`;
+    }
+    h+='<p class="muted small" style="margin:0">Toca outra vez para desmarcar.</p>';
+  } else h+='<p class="muted" style="margin:0">Não tens turnos que possam ser trocados neste dia.</p>';
+  const ngs=state.nogo.get(di)||new Set();
+  h+=`<div class="eyebrow">Não posso trabalhar</div><div class="seg nogo-seg" role="group" aria-label="Períodos em que não posso">${[['M','Manhã','08–14'],['T','Tarde','14–20'],['N','Noite','20–08'],['ALL','Dia todo','']].map(([k,l,tm])=>`<button type="button" class="segb nogob" data-p="${k}" aria-pressed="${k==='ALL'?ngs.size===3:ngs.has(k)}"><b>${l}</b>${tm?`<span>${tm}</span>`:''}</button>`).join('')}</div><p class="muted small" style="margin:0">Por questões familiares ou outro trabalho. A app nunca te propõe turnos nesses períodos.</p>`;
+  $('#sheet-body').innerHTML=h; $('#sheet').hidden=false; $('#scrim').hidden=false; $('#sheet').dataset.di=di;
+  const nb=[...$('#sheet-body').querySelectorAll('.nogob')];
+  const syncAll=()=>{ const all=nb.filter(b=>b.dataset.p!=='ALL').every(b=>b.getAttribute('aria-pressed')==='true'); nb.find(b=>b.dataset.p==='ALL').setAttribute('aria-pressed',all); };
+  nb.forEach(b=>b.addEventListener('click',()=>{ const on=b.getAttribute('aria-pressed')==='true';
+    if(b.dataset.p==='ALL') nb.forEach(x=>x.setAttribute('aria-pressed',!on)); else { b.setAttribute('aria-pressed',!on); syncAll(); } }));
+  $('#sheet-body').querySelectorAll('.segb:not(.nogob)').forEach(b=>b.addEventListener('click',()=>{
+    const on=b.getAttribute('aria-pressed')==='true';
+    b.closest('.seg').querySelectorAll('.segb').forEach(x=>x.setAttribute('aria-pressed','false'));
+    b.setAttribute('aria-pressed',on?'false':'true');
+  }));
+  $('#sheet-close').focus();
+}
+function closeSheet(){
+  const di=+$('#sheet').dataset.di; const sel=new Set();
+  $('#sheet-body').querySelectorAll('.segb:not(.nogob)[aria-pressed="true"]').forEach(b=>sel.add(b.dataset.id));
+  if(sel.size) state.free.set(di,sel); else state.free.delete(di);
+  const ps=new Set([...$('#sheet-body').querySelectorAll('.nogob[aria-pressed="true"]')].map(b=>b.dataset.p).filter(p=>p!=='ALL'));
+  if(ps.size) state.nogo.set(di,ps); else state.nogo.delete(di);
+  $('#sheet').hidden=true; $('#scrim').hidden=true; renderCal(); updateBar();
+}
+function findItem(me,id){ const b=me.base.find(x=>x.id===id); if(b) return b; const parId=id.split('|').slice(0,3).join('|'); const par=me.base.find(x=>x.id===parId); return splitPrev(par).find(h=>h.id===id); }
+
+function runSearch(){
+  const me=state.me; const res=$('#results'); $('#sec-res').hidden=false;
+  res.innerHTML='<p class="row"><span class="spinner"></span> A procurar trocas…</p>'; $('#sec-res').scrollIntoView({block:'start'});
+  setTimeout(()=>{
+    const units=[]; for(const [di,ids] of [...state.free].sort((a,b)=>a[0]-b[0])){
+      const its=[...ids].map(id=>findItem(me,id)).filter(Boolean).sort((a,b)=>a.abs-b.abs);
+      units.push(its); } // bloco do dia (ex.: MT9 + TN11); se não houver bom bloco, junta-se a divisão por colegas
+    res.innerHTML=units.map((u,i)=>`<div class="unit" id="unit-${i}"><div class="unit-h"><h3>${fmtDate(u[0].t)}</h3>${u.map(chip).join('')}<span class="small muted">${esc(u.map(itemText).join(' + '))}</span></div><p class="row muted small"><span class="spinner"></span> A procurar…</p></div>`).join('');
+    let i=0; const next=()=>{ if(i>=units.length) return; const u=units[i]; const r=search(me,u,state.nogo);
+      if(u.length>1) addSplitCombos(me,u,r,state.nogo);
+      renderUnit(i,u,r); i++; setTimeout(next,10); }; next();
+  },30);
+}
+// divide o bloco do dia (ex.: MT9 + TN11) por colegas diferentes, cada parte numa troca própria
+function addSplitCombos(me,u,r,nogo){
+  const per=u.map(it=>search(me,[it],nogo,1200).sols.filter(x=>x.lvl<=4).slice(0,12));
+  if(per.some(l=>!l.length)) return;
+  const others=x=>new Set(x.moves.flatMap(m=>[m.from,m.to]).filter(n=>n!==me.num));
+  let combos=[[]];
+  for(const list of per){ const nx=[]; for(const c of combos) for(const sol of list){
+      const used=new Set(c.flatMap(x=>[...others(x)])); if([...others(sol)].some(n=>used.has(n))) continue; nx.push([...c,sol]); }
+    combos=nx.slice(0,200); }
+  const seen=new Set(r.sols.map(x=>JSON.stringify(x.moves.map(m=>[m.from,m.to,m.items.map(i=>i.id)]))));
+  for(const c of combos){
+    const moves=c.flatMap(x=>x.moves);
+    const byP=new Map(); for(const m of moves){ for(const n of [m.from,m.to]) if(!byP.has(n)) byP.set(n,{give:[],recv:[]}); byP.get(m.from).give.push(...m.items); byP.get(m.to).recv.push(...m.items); }
+    const evals=[]; let ok=true;
+    for(const [n,g] of byP){ const p=DATA.byNum.get(n); const e=evaluate(p,g.give,g.recv,n===me.num?nogo:null); if(!e){ok=false;break} evals.push(e); }
+    if(!ok) continue;
+    const sc=scoreSolution(moves,evals); const k=JSON.stringify(moves.map(m=>[m.from,m.to,m.items.map(i=>i.id)])); if(seen.has(k)) continue; seen.add(k);
+    const sol={moves,...sc,parts:c.map((x,j)=>({item:u[j],n:x.moves.length}))};
+    sol.tier=(sol.lvl<=2?(sol.people===2?0:1):2)+0.5; // a seguir às trocas em bloco do mesmo grupo
+    r.sols.push(sol);
+  }
+  // dentro de cada grupo: primeiro o nível; em empate, o bloco inteiro antes da divisão por colegas
+  r.sols.sort((a,b)=>Math.floor(a.tier)-Math.floor(b.tier)||a.lvl-b.lvl||(a.parts?1:0)-(b.parts?1:0)||a.people-b.people||(a.mismatch||0)-(b.mismatch||0)||a.sumAbs-b.sumAbs);
+}
+function moveHtml(m){ return `<li><span class="who">${esc(nameOf(m.from))} → ${esc(nameOf(m.to))}</span><span class="what">${m.items.map(it=>`${chip(it)} ${esc(fmtDate(it.t))} · ${hm(it.s)}–${hm(it.e)} · ${esc(itemText(it))}`).join(' + ')}</span></li>`; }
+function hClass(min){ const a=Math.abs(min); return a===0?'ok':(a<=150?'warn':'bad'); }
+function solHtml(s){
+  const ds=s.deltas;
+  const hrs = ds.every(d=>d.d===0) ? `<span class="v ok">iguais para todos</span>`
+    : ds.map(d=>`${esc(nameOf(d.num))} <span class="v ${hClass(d.d)}">${d.d===0?'=':fmtH(d.d)}</span>`).join(' · ');
+  const split=s.moves.length===4 && s.moves[0].items[0].half && s.moves[2].items[0].parent===s.moves[0].items[0].parent;
+  const tags=[s.parts?'Bloco dividido por colegas diferentes':'',split?'MT dividido: um colega faz a M, outro a T':'',s.sameShift?'Mesmo tipo de turno':'',s.sameDay?'Mesmo tipo de dia':''].filter(Boolean);
+  const owe=[]; for(const d of ds) if(d.d<0) owe.push(`${d.num===state.me.num?'Ficas':esc(nameOf(d.num))+' fica'} a dever ${fmtH(d.d).slice(1)} de trabalho`);
+  for(const p of s.prevInfo){ const g=Object.values(p.give).reduce((a,b)=>a+b,0), rc=Object.values(p.recv).reduce((a,b)=>a+b,0);
+    if(g>rc) owe.push(`${p.num===state.me.num?'Ficas':esc(nameOf(p.num))+' fica'} a dever ${fmtH(rc-g).slice(1)} de prevenção`);
+    else if(p.unbal && g===rc) owe.push(`${p.num===state.me.num?'Trocas':esc(nameOf(p.num))+' troca'} prevenção de tipo diferente`); }
+  const bigOwe = ds.some(d=>Math.abs(d.d)>150) || s.prevInfo.some(p=>p.unbal);
+  const debt = owe.length ? `<div class="debt ${bigOwe?'bad':'warn'}"><strong>${bigOwe?'⚠ Horas por acertar':'Pequena diferença de horas'}</strong><span>${owe.join(' · ')}${bigOwe?'. Não há forma de pagar dentro deste horário: combinar o acerto no mês seguinte.':''}</span></div>` : '';
+  const prev = s.prevInfo.length ? `<div class="hours"><strong>Prevenção:</strong> ${s.prevInfo.map(p=>`${esc(nameOf(p.num))} dá ${prevTxt(p.give)}, recebe ${prevTxt(p.recv)} <span class="v ${p.unbal?'bad':'ok'}">${p.unbal?'fica a acertar':'certo'}</span>`).join(' · ')}</div>` : '';
+  return `<article class="sol" data-l="${s.lvl}"><div class="row spread"><span class="lvl">${LVL_LABEL[s.lvl]}</span><span class="small muted">${s.people} pessoas</span></div>
+    ${tags.length?`<div class="row" style="gap:6px">${tags.map(t=>`<span class="tag">✓ ${t}</span>`).join('')}</div>`:''}
+    ${s.parts ? (()=>{ let k=0; return s.parts.map(pt=>{ const ms=s.moves.slice(k,k+pt.n); k+=pt.n; return `<div class="part"><div class="part-h">${chip(pt.item)} ${esc(pt.item.prev?'Prevenção':(AREA_LABEL[pt.item.area]||''))}</div><ul class="moves">${ms.map(moveHtml).join('')}</ul></div>`; }).join(''); })()
+      : `<ul class="moves">${s.moves.map(moveHtml).join('')}</ul>`}
+    ${debt}
+    ${s.issues.length?`<ul class="issues">${s.issues.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}
+    <div class="hours"><strong>Horas de trabalho no mês:</strong> ${hrs}</div>
+    ${prev}</article>`;
+}
+function prevTxt(o){ const ks=Object.keys(o); if(!ks.length) return 'nada'; const tot=ks.reduce((a,k)=>a+o[k],0);
+  return `${fmtH(tot).slice(1)} (${ks.map(k=>PREV_TYPE_LABEL[k]||k).join(' + ')})`; }
+function renderUnit(i,u,r){
+  const el=$(`#unit-${i}`); const PAGE=10;
+  const shown={a:PAGE,b:PAGE,c:5,e:3};
+  const names={1:['ideal','ideais'],2:['aceitável','aceitáveis'],3:['pouco desejável','pouco desejáveis'],4:['de último recurso','de último recurso'],5:['com autorização da chefia','com autorização da chefia']};
+  const counts=list=>{ const cnt={}; list.forEach(s=>{const k=Math.min(s.lvl,5);cnt[k]=(cnt[k]||0)+1}); return Object.entries(cnt).map(([k,v])=>`${v} ${names[k][v===1?0:1]}`).join(' · '); };
+  const block=(key,title,list,empty)=>{
+    let h=`<div class="grp-h"><h4>${title}</h4><span class="small muted">${list.length?counts(list):''}</span></div>`;
+    if(!list.length) return h+`<p class="muted small" style="margin:0">${empty}</p>`;
+    h+=list.slice(0,shown[key]).map(solHtml).join('');
+    if(list.length>shown[key]) h+=`<button class="more" data-more="${key}">Ver mais ${Math.min(PAGE,list.length-shown[key])}</button>`;
+    return h;
+  };
+  const draw=()=>{
+    let h=`<div class="unit-h"><h3>${fmtDate(u[0].t)}</h3>${u.map(chip).join('')}<span class="small muted">${esc(u.map(itemText).join(' + '))}</span></div>`;
+    if(!r.sols.length) h+='<p class="muted" style="margin:0">Não encontrei trocas que cumpram as regras.</p>';
+    else {
+      const t0=r.sols.filter(x=>x.tier<1), t1=r.sols.filter(x=>x.tier>=1&&x.tier<2), t2=r.sols.filter(x=>x.tier>=2&&x.lvl<=4), t3=r.sols.filter(x=>x.tier>=2&&x.lvl>=5);
+      h+=block('a','Melhores · trocas diretas (tu e um colega)',t0,'Não há trocas diretas ideais ou aceitáveis.');
+      h+=block('b','Melhores · com 3 ou mais pessoas',t1,'Não há trocas ideais ou aceitáveis com mais pessoas.');
+      h+=block('c','Outras opções',t2,'Não há outras opções.');
+      h+=block('e','Só com autorização da chefia',t3,'Nenhuma.');
+    }
+    if(r.timedOut) h+='<p class="small muted" style="margin:0">A pesquisa parou ao fim de alguns segundos; pode haver mais combinações longas.</p>';
+    el.innerHTML=h;
+    el.querySelectorAll('[data-more]').forEach(b=>b.onclick=()=>{shown[b.dataset.more]+=PAGE;draw()});
+  };
+  draw();
+}
+
+/* tabela de siglas */
+(function(){
+  const rows=Object.entries(TIMES).sort((a,b)=>a[0].localeCompare(b[0],'pt',{numeric:true})).map(([c,[a,b]])=>[c,`${hm(a)}–${hm(b)}`,fmtH(b-a).slice(1)]);
+  const other=[['D','Descanso'],['DC','Descanso complementar'],['DS','Descanso semanal'],['F','Folga'],['Fe','Folga de feriado'],['L','Férias'],['LP','Licença parental'],['A','Ausência médica'],['Cgs','Comissão gratuita de serviço'],['No','Nojo'],['Fi','Formação interna']];
+  $('#codes-table').innerHTML=`<table style="border-collapse:collapse;width:100%"><thead><tr><th style="text-align:left;padding:4px 8px 4px 0">Sigla</th><th style="text-align:left;padding:4px 8px">Horário</th><th style="text-align:right;padding:4px 0">Horas</th></tr></thead><tbody class="tabnums">${rows.map(r=>`<tr style="border-top:1px solid var(--line)"><td style="padding:3px 8px 3px 0"><span class="code">${r[0]}</span></td><td style="padding:3px 8px">${r[1]}</td><td style="text-align:right">${r[2]}</td></tr>`).join('')}</tbody></table>
+  <p style="margin:10px 0 4px"><strong>Sem horário</strong></p><ul style="margin:0;padding-left:1.1em">${other.map(([c,t])=>`<li><span class="code ${['L','LP','A','Cgs','No'].includes(c)?'k-BLOCK':c==='Fi'?'k-FI':'k-OFF'}">${c}</span> ${t}</li>`).join('')}</ul>
+  <p class="muted" style="margin:8px 0 0">Siglas sem horário conhecido (RC, REC, PMD, Prv, HE…) ficam fora das trocas.</p>`;
+})();
+
+/* eventos */
+const fileIn=$('#file'), drop=$('#drop');
+fileIn.addEventListener('change',()=>{ if(fileIn.files.length) handleFiles([...fileIn.files]); });
+['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('over')}));
+['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('over')}));
+drop.addEventListener('drop',e=>{ const fs=[...e.dataTransfer.files].filter(f=>/pdf$/i.test(f.name)||f.type==='application/pdf'); if(fs.length) handleFiles(fs); });
+$('#who-q').addEventListener('input',e=>renderPeople(e.target.value));
+$('#people').addEventListener('click',e=>{ const b=e.target.closest('button[data-num]'); if(b) choose(b.dataset.num); });
+$('#change-who').addEventListener('click',()=>{ $('#sec-cal').hidden=true; $('#sec-res').hidden=true; $('#bar').hidden=true; $('#sec-who').hidden=false; renderPeople($('#who-q').value); });
+$('#months').addEventListener('click',e=>{ const d=e.target.closest('.day[data-di]'); if(d&&!d.disabled) openSheet(+d.dataset.di); });
+$('#sheet-close').addEventListener('click',closeSheet); $('#scrim').addEventListener('click',closeSheet);
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&!$('#sheet').hidden) closeSheet(); });
+$('#go').addEventListener('click',runSearch);
+
+window.addEventListener('unhandledrejection',e=>{const st=$('#load-status');st.hidden=false;st.innerHTML=`<span style="color:var(--bad)">Erro: ${esc(e.reason&&e.reason.message||e.reason)}</span>`});
+window.__trocas={addSplitCombos,readPdf,buildModel,search,evaluate,get DATA(){return DATA},set TODAY(v){TODAY_IDX=v},state,handleFiles,choose};
+</script>
+<script>
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{ navigator.serviceWorker.register('sw.js').then(reg=>{ reg.update(); }).catch(()=>{}); });
+  let reloaded=false; const hadController=!!navigator.serviceWorker.controller; // na 1.ª instalação não recarrega
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{ if(reloaded||!hadController) return; reloaded=true;
+    // nova versão instalada: só recarrega se ainda não há horário carregado, para não perder o trabalho
+    if(!window.__trocas || !window.__trocas.DATA) location.reload();
+    else { const t=document.createElement('div'); t.className='toast'; t.textContent='Há uma versão nova da app. Fecha e volta a abrir para a usar.'; document.body.appendChild(t); setTimeout(()=>t.remove(),8000); } });
+}
+</script>
+</body>
+</html>
