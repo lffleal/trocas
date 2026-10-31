@@ -823,14 +823,30 @@ function chip(it){ const k=it.extra?'EXTRA':(it.medcir?'PLAIN':it.area); const c
   return `<span class="code${cls}" title="${esc(AREA_LABEL[it.area]||'')}">${esc(shortCode(it))}${it.medcir?'<span class="mc">Med Cir</span>':''}</span>`; }
 function itemText(it){ if(it.prev) return it.half?({d:'prevenção de dia',n:'prevenção de noite',pm:'prevenção de manhã (6 h)',pt:'prevenção de tarde (6 h)'})[it.half]||'prevenção':'prevenção'; const a=AREA_LABEL[it.area]||''; return it.half?`${a}, ${it.half==='m'?'manhã':'tarde'} do ${it.code}`:a; }
 
+/* horário guardado só nesta sessão: sobrevive a recarregar a página, apaga-se ao fechar a app */
+const sess={get(k){try{return sessionStorage.getItem(k)}catch(e){return null}},set(k,v){try{sessionStorage.setItem(k,v)}catch(e){}},del(k){try{sessionStorage.removeItem(k)}catch(e){}}};
+function toB64(u8){ let s=''; for(let i=0;i<u8.length;i+=0x8000) s+=String.fromCharCode.apply(null,u8.subarray(i,i+0x8000)); return btoa(s); }
+function fromB64(b){ const s=atob(b); const u=new Uint8Array(s.length); for(let i=0;i<s.length;i++) u[i]=s.charCodeAt(i); return u; }
+function saveMarks(){ if(!state.me) return; sess.set('trocas.marks',JSON.stringify({me:state.me.num,free:[...state.free].map(([d,v])=>[d,[...v]]),nogo:[...state.nogo].map(([d,v])=>[d,[...v]])})); }
+async function restoreSession(){
+  const raw=sess.get('trocas.pdfs'); if(!raw) return;
+  let list; try{ list=JSON.parse(raw); }catch(e){ return; }
+  const files=list.map(x=>new File([fromB64(x.b64)],x.name,{type:'application/pdf'}));
+  await handleFiles(files);
+  if(!DATA) return;
+  try{ const m=JSON.parse(sess.get('trocas.marks')||'null');
+    if(m && DATA.byNum.has(m.me)){ choose(m.me); state.free=new Map(m.free.map(([d,v])=>[d,new Set(v)])); state.nogo=new Map(m.nogo.map(([d,v])=>[d,new Set(v)])); renderCal(); updateBar(); saveMarks(); } }catch(e){}
+}
 async function handleFiles(files){
   const st=$('#load-status'); st.hidden=false; st.innerHTML='<span class="spinner"></span> A ler o horário…';
   try{
     const parsed=[];
     st.innerHTML='<span class="spinner"></span> A preparar o leitor de PDF…';
     await loadPdfjs();
+    const keep=[];
     for(const f of files){ st.innerHTML=`<span class="spinner"></span> A ler ${esc(f.name)}…`;
-      const buf=new Uint8Array(await f.arrayBuffer()); parsed.push(await readPdf(buf)); }
+      const buf=new Uint8Array(await f.arrayBuffer()); keep.push({name:f.name,b64:toB64(buf)}); parsed.push(await readPdf(buf.slice())); }
+    sess.set('trocas.pdfs',JSON.stringify(keep));
     DATA=buildModel(parsed);
     const todayT=Date.UTC(new Date().getFullYear(),new Date().getMonth(),new Date().getDate());
     TODAY_IDX=DATA.dates.findIndex(t=>t>=todayT); if(TODAY_IDX<0) TODAY_IDX=DATA.dates.length;
@@ -854,7 +870,7 @@ function renderPeople(q){
 function choose(num){
   state.me=DATA.byNum.get(num); state.free=new Map(); state.nogo=new Map(); store.set('trocas.me',num);
   $('#sec-who').hidden=true; $('#sec-cal').hidden=false; $('#bar').hidden=false; $('#sec-res').hidden=true;
-  $('#cal-title').textContent=`Horário de ${shortName(state.me)}`;
+  $('#cal-title').textContent=`Horário de ${shortName(state.me)}`; saveMarks();
   renderCal(); updateBar(); $('#sec-cal').scrollIntoView({block:'start'});
 }
 function renderCal(){
@@ -925,7 +941,7 @@ function closeSheet(){
   if(sel.size) state.free.set(di,sel); else state.free.delete(di);
   const ps=new Set([...$('#sheet-body').querySelectorAll('.nogob[aria-pressed="true"]')].map(b=>b.dataset.p).filter(p=>p!=='ALL'));
   if(ps.size) state.nogo.set(di,ps); else state.nogo.delete(di);
-  $('#sheet').hidden=true; $('#scrim').hidden=true; renderCal(); updateBar();
+  $('#sheet').hidden=true; $('#scrim').hidden=true; renderCal(); updateBar(); saveMarks();
 }
 function findItem(me,id){ const b=me.base.find(x=>x.id===id); if(b) return b; const parId=id.split('|').slice(0,3).join('|'); const par=me.base.find(x=>x.id===parId); return splitPrev(par).find(h=>h.id===id); }
 
@@ -1031,6 +1047,7 @@ function renderUnit(i,u,r){
 })();
 
 /* eventos */
+restoreSession();
 const fileIn=$('#file'), drop=$('#drop');
 fileIn.addEventListener('change',()=>{ if(fileIn.files.length) handleFiles([...fileIn.files]); });
 ['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('over')}));
