@@ -222,25 +222,6 @@ details summary{cursor:pointer}
       <li>Tocas nos turnos que queres libertar e nos dias em que não podes mesmo trabalhar.</li>
       <li>A app procura trocas diretas e em cadeia (até 4 pessoas) que respeitam as regras do serviço e ordena-as da melhor para a de último recurso.</li>
     </ol>
-    <div class="legend" aria-label="Legenda das cores">
-      <span><span class="code k-HEMO">MT9</span> Hemodinâmica</span>
-      <span><span class="code k-PREV">TN11</span> Prevenção</span>
-      <span><span class="code k-CIC">M9</span> CIC</span>
-      <span><span class="code k-RECOBRO">T4</span> Recobro</span>
-      <span><span class="code k-PACES">MT44</span> Paces</span>
-      <span><span class="code">M4<span class="mc">Med Cir</span></span> Med Cir</span>
-      <span><span class="code k-REAB">MT35</span> Reabilitação</span>
-      <span><span class="code k-ENSINOS">T26</span> Ensinos</span>
-      <span><span class="code k-REABENS">MT20</span> Reabilitação + ensinos</span>
-      <span><span class="code k-ECO">MT1</span> Ecostress</span>
-      <span><span class="code k-BLOCK">L</span> Férias / ausência</span>
-      <span><span class="code k-EXTRA">T1</span> Extra</span>
-    </div>
-    <p class="small muted" style="margin:0">As cores dizem o posto; a mesma sigla pode ter cores diferentes (um M4 pode ser recobro, CIC ou Med Cir).</p>
-    <details>
-      <summary class="small"><strong>Todas as siglas e horários</strong></summary>
-      <div id="codes-table" class="small" style="overflow-x:auto;margin-top:8px"></div>
-    </details>
   </section>
 
   <!-- 2. nome -->
@@ -1089,14 +1070,7 @@ function renderUnit(i,u,r){
   draw();
 }
 
-/* tabela de siglas */
-(function(){
-  const rows=Object.entries(TIMES).sort((a,b)=>a[0].localeCompare(b[0],'pt',{numeric:true})).map(([c,[a,b]])=>[c,`${hm(a)}–${hm(b)}`,fmtH(b-a).slice(1)]);
-  const other=[['D','Descanso'],['DC','Descanso complementar'],['DS','Descanso semanal'],['F','Folga'],['Fe','Folga de feriado'],['L','Férias'],['LP','Licença parental'],['A','Ausência médica'],['Cgs','Comissão gratuita de serviço'],['No','Nojo'],['UCIC','Anotação de posto (UCIC)'],['G','Greve'],['PP','Prolongamento não programado'],['Fi','Formação interna']];
-  $('#codes-table').innerHTML=`<table style="border-collapse:collapse;width:100%"><thead><tr><th style="text-align:left;padding:4px 8px 4px 0">Sigla</th><th style="text-align:left;padding:4px 8px">Horário</th><th style="text-align:right;padding:4px 0">Horas</th></tr></thead><tbody class="tabnums">${rows.map(r=>`<tr style="border-top:1px solid var(--line)"><td style="padding:3px 8px 3px 0"><span class="code">${r[0]}</span></td><td style="padding:3px 8px">${r[1]}</td><td style="text-align:right">${r[2]}</td></tr>`).join('')}</tbody></table>
-  <p style="margin:10px 0 4px"><strong>Sem horário</strong></p><ul style="margin:0;padding-left:1.1em">${other.map(([c,t])=>`<li><span class="code ${['L','LP','A','Cgs','No','G'].includes(c)?'k-BLOCK':c==='Fi'?'k-FI':'k-OFF'}">${c}</span> ${t}</li>`).join('')}</ul>
-  <p class="muted" style="margin:8px 0 0">Siglas sem horário conhecido (RC, REC, PMD, Prv, HE…) ficam fora das trocas.</p>`;
-})();
+
 
 /* eventos */
 restoreSession();
