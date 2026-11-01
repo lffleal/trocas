@@ -162,6 +162,9 @@ input[type=search]{font:inherit;width:100%;padding:10px 12px;border-radius:10px;
 .hours .v.warn{color:var(--warn);background:color-mix(in srgb,var(--warn) 18%,transparent)}
 .hours .v.bad{color:var(--bad);background:color-mix(in srgb,var(--bad) 16%,transparent)}
 .more{align-self:flex-start}
+.hint{margin:0;padding:10px 12px;border-radius:10px;background:var(--accent-soft);border-left:4px solid var(--accent);color:var(--ink);font-weight:700;font-size:1rem;line-height:1.4}
+.q-title{font-size:1.05rem;font-weight:700;color:var(--ink);padding:6px 10px;border-radius:8px;background:var(--accent-soft);border-left:4px solid var(--accent)}
+.q-title.nogo-t{background:color-mix(in srgb,var(--bad) 14%,transparent);border-left-color:var(--bad)}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(90px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 14px;border-radius:10px;font-size:.88rem;z-index:30;max-width:90vw}
 .debt{display:flex;flex-direction:column;gap:2px;border-radius:8px;padding:8px 10px;font-size:.88rem}
 .debt.bad{background:color-mix(in srgb,var(--bad) 18%,transparent);border:1.5px solid var(--bad);color:var(--ink)}
@@ -246,7 +249,7 @@ details summary{cursor:pointer}
   <section class="panel" id="sec-cal" hidden>
     <div class="row spread"><div class="eyebrow">Passo 3</div><button id="change-who" class="small">Mudar pessoa</button></div>
     <h2 id="cal-title">O teu horário</h2>
-    <p class="muted small" style="margin:0">Toca num dia para marcar o turno a libertar ou para indicar que não podes trabalhar.</p>
+    <p class="hint">👆 Toca num dia para marcar o turno a libertar ou para indicar que não podes trabalhar.</p>
     <div id="months"></div>
   </section>
 
@@ -913,7 +916,7 @@ function openSheet(di){
   const sel=state.free.get(di)||new Set();
   let h='';
   if(items.length){
-    h+='<div class="eyebrow">O que queres libertar?</div>';
+    h+='<div class="q-title">O que queres libertar?</div>';
     for(const it of items){
       const opts=partOptions(it);
       h+=`<div class="pick" data-item="${it.id}"><div class="pick-h">${chip(it)} <span class="tabnums">${hm(it.s)}–${hm(it.e)}</span> <span class="muted small">${esc(it.prev?'Prevenção':(AREA_LABEL[it.area]||''))}</span></div>
@@ -922,7 +925,7 @@ function openSheet(di){
     h+='<p class="muted small" style="margin:0">Toca outra vez para desmarcar.</p>';
   } else h+='<p class="muted" style="margin:0">Não tens turnos que possam ser trocados neste dia.</p>';
   const ngs=state.nogo.get(di)||new Set();
-  h+=`<div class="eyebrow">Não posso trabalhar</div><div class="seg nogo-seg" role="group" aria-label="Períodos em que não posso">${[['M','Manhã','08–14'],['T','Tarde','14–20'],['N','Noite','20–08'],['ALL','Dia todo','']].map(([k,l,tm])=>`<button type="button" class="segb nogob" data-p="${k}" aria-pressed="${k==='ALL'?ngs.size===3:ngs.has(k)}"><b>${l}</b>${tm?`<span>${tm}</span>`:''}</button>`).join('')}</div><p class="muted small" style="margin:0">Por questões familiares ou outro trabalho. A app nunca te propõe turnos nesses períodos.</p>`;
+  h+=`<div class="q-title nogo-t">Não posso trabalhar</div><div class="seg nogo-seg" role="group" aria-label="Períodos em que não posso">${[['M','Manhã','08–14'],['T','Tarde','14–20'],['N','Noite','20–08'],['ALL','Dia todo','']].map(([k,l,tm])=>`<button type="button" class="segb nogob" data-p="${k}" aria-pressed="${k==='ALL'?ngs.size===3:ngs.has(k)}"><b>${l}</b>${tm?`<span>${tm}</span>`:''}</button>`).join('')}</div><p class="muted small" style="margin:0">Por questões familiares ou outro trabalho. A app nunca te propõe turnos nesses períodos.</p>`;
   $('#sheet-body').innerHTML=h; $('#sheet').hidden=false; $('#scrim').hidden=false; $('#sheet').dataset.di=di;
   const nb=[...$('#sheet-body').querySelectorAll('.nogob')];
   const syncAll=()=>{ const all=nb.filter(b=>b.dataset.p!=='ALL').every(b=>b.getAttribute('aria-pressed')==='true'); nb.find(b=>b.dataset.p==='ALL').setAttribute('aria-pressed',all); };
