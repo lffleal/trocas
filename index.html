@@ -106,6 +106,8 @@ input[type=search]{font:inherit;width:100%;padding:10px 12px;border-radius:10px;
 .k-CIC{background:#0080ff;color:#0f0f0f}
 .k-FI{background:#1f8fff;color:#ffffff}
 .k-REAB{background:#8080ff;color:#000000}
+.k-REABENS{background:linear-gradient(#8080ff 0 50%,#ffff80 50% 100%);color:#000000}
+.k-ECO{background:#ff8040;color:#000000}
 .k-ENSINOS{background:#ffff80;color:#000000}
 .k-RECOBRO{background:#ff0000;color:#000000}
 .k-PACES{background:#ffffff;color:#00d600}
@@ -226,6 +228,8 @@ details summary{cursor:pointer}
       <span><span class="code">M4<span class="mc">Med Cir</span></span> Med Cir</span>
       <span><span class="code k-REAB">MT35</span> Reabilitação</span>
       <span><span class="code k-ENSINOS">T26</span> Ensinos</span>
+      <span><span class="code k-REABENS">MT20</span> Reabilitação + ensinos</span>
+      <span><span class="code k-ECO">MT1</span> Ecostress</span>
       <span><span class="code k-BLOCK">L</span> Férias / ausência</span>
       <span><span class="code k-EXTRA">T1</span> Extra</span>
     </div>
@@ -290,14 +294,15 @@ const UCIC_GROUPS = new Set(['ENFER_UCIC','ENFEMC_UCI','ENF_UCIC','ENFESC_UCI'])
 const FI_SERVICE_MIN = 5;
 
 // horários (minutos desde as 00:00 do dia do turno)
-const TIMES = {M1:[480,900],M12:[420,900],M19:[480,780],M2:[480,870],M4:[480,840],M9:[480,960],MT1:[480,1230],MT115:[420,1200],MT13:[480,1140],MT20:[480,1020],
+const TIMES = {M31:[480,660],MT65:[660,1040],M1:[480,900],M12:[420,900],M19:[480,780],M2:[480,870],M4:[480,840],M9:[480,960],MT1:[480,1230],MT115:[420,1200],MT13:[480,1140],MT20:[480,1020],
  MT25:[420,930],MT35:[540,960],MT372:[420,1080],MT43:[420,1020],MT44:[660,1140],MT45:[420,1140],MT5:[480,1200],MT51:[660,1200],MT66:[660,1020],MT9:[480,1080],
  MTN:[480,1920],N1:[1200,1950],N10:[1140,1920],N4:[1200,1920],T1:[840,1230],T17:[840,1140],T26:[780,1200],T27:[840,1080],T4:[840,1200],T52:[780,1230],
  TN1:[840,1950],TN11:[1080,1920],TN3:[840,1920]};
 const OFF = new Set(['D','DC','DS','F','Fe']);
-const BLOCK = new Set(['L','LP','A','Cgs','No']);
+const BLOCK = new Set(['L','LP','A','Cgs','No','G']); // G = greve
+const INFO = new Set(['PP','HE','UCIC']); // anotações sem horário (ex.: PP = prolongamento não programado): não entram nas trocas
 
-const AREA_LABEL = {HEMO:'Hemodinâmica',PREV:'Prevenção',CIC:'CIC',REAB:'Reabilitação',ENSINOS:'Ensinos',RECOBRO:'Recobro',PACES:'Paces',MEDCIR:'Med Cir',UCIC:'UCIC',INT:'Internamento',EXTRA:'Extra'};
+const AREA_LABEL = {ECO:'Ecostress',REABENS:'Reabilitação + ensinos',HEMO:'Hemodinâmica',PREV:'Prevenção',CIC:'CIC',REAB:'Reabilitação',ENSINOS:'Ensinos',RECOBRO:'Recobro',PACES:'Paces',MEDCIR:'Med Cir',UCIC:'UCIC',INT:'Internamento',EXTRA:'Extra'};
 const LVL_LABEL = {1:'Ideal',2:'Aceitável',3:'Pouco desejável',4:'Último recurso',5:'Requer autorização da chefia',6:'Requer autorização da chefia · última hipótese'};
 const MONTHS = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
 const MON_AB = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
@@ -359,6 +364,7 @@ function classBg(c,fg,code){
   if(PREV_CODES.has(code) && code!=='MTN') return 'PREV';
   if(mx-mn<45) return (green&&PREV_CODES.has(code))?'PREV':'none';
   if(r>200&&g>200&&b<140) return 'ENSINOS';
+  if(r>235&&g>95&&g<165&&b>=45&&b<115) return 'ECO';   // ecostress (salmão 255,128,64); castanho da hemodinâmica tem r≈209 e laranja da prevenção b≈0
   if(r>150&&r>=g&&g>=b&&r-b>110&&g>60&&g<190){   // laranja (prevenção) ou castanho (hemodinâmica)
     if(PREV_CODES.has(code)) return 'PREV';
     if(code==='MT9') return 'HEMO';
@@ -410,7 +416,7 @@ function parseTokens(toks, sample){
   // check sequence
   for(let i=1;i<cols.length;i++) if(cols[i].t-cols[i-1].t!==dayMs) warn.push('Sequência de dias irregular no cabeçalho.');
   const colW = (cols[cols.length-1].cx-cols[0].cx)/(cols.length-1);
-  const left = cols[0].cx - colW*0.75, right = cols[cols.length-1].cx + colW*0.75;
+  const left = cols[0].cx - colW*0.55, right = cols[cols.length-1].cx + colW*0.75;
   const footer = toks.find(t=>t.s==='Manhã' && t.y>first.y);
   const yMax = footer? footer.y-1 : 1e9;
   // group headers and employees
@@ -430,14 +436,20 @@ function parseTokens(toks, sample){
   let lost=0;
   for(const t of body){
     let best=null,bd=99; for(const p of people){const d=Math.abs(p.y-t.y);if(d<bd){bd=d;best=p}}
-    if(!best||bd>3.6){lost++;continue}
+    if(!best||bd>3.6){lost++; continue}
     const cx=t.x+t.w/2; let ci=0,cd=1e9; cols.forEach((c,i)=>{const d=Math.abs(c.cx-cx);if(d<cd){cd=d;ci=i}});
     const key=cols[ci].t; if(!best.cells.has(key)) best.cells.set(key,[]);
     let bgc=[255,255,255], fgc=[0,0,0];
-    if(sample){ const band=sample(t.x+t.w*0.15, t.y+t.h*0.28, t.x+t.w*0.85, t.y+t.h*0.52); // faixa só com o fundo, por baixo das letras
-      const glyph=sample(t.x+0.25, t.y-t.h*0.72, t.x+t.w-0.25, t.y-t.h*0.05);
-      bgc=band.bg; let fd=-1; fgc=glyph.fg; fgc=glyph.fg; }
-    best.cells.get(key).push({s:t.s,x:t.x,bg:classBg(bgc,fgc,t.s),fg:classFg(fgc),rawbg:bgc,rawfg:fgc});
+    let topc=null;
+    if(sample){ const band=sample(t.x+t.w*0.15, t.y+t.h*0.28, t.x+t.w*0.85, t.y+t.h*0.52); // metade de baixo do fundo, por baixo das letras
+      const glyph=sample(t.x+0.25, t.y-t.h*0.72, t.x+t.w-0.25, t.y-t.h*0.05);           // metade de cima, entre as letras
+      bgc=band.bg; fgc=glyph.fg; topc=glyph.bg; }
+    let bgClass=classBg(bgc,fgc,t.s);
+    if(topc){ const tc=classBg(topc,fgc,t.s);
+      // células de duas cores: roxo em cima (reabilitação) e amarelo em baixo (ensinos)
+      if((tc==='REAB'&&bgClass==='ENSINOS')||(tc==='ENSINOS'&&bgClass==='REAB')) bgClass='REABENS';
+      else if(tc==='REAB'&&bgClass!=='REAB'&&!['HEMO','PREV','RECOBRO','EXTRA','MEDCIR'].includes(bgClass)) bgClass='REAB'; }
+    best.cells.get(key).push({s:t.s,x:t.x,bg:bgClass,fg:classFg(fgc),rawbg:bgc,rawfg:fgc,rawtop:topc});
   }
   if(lost) warn.push(`${lost} códigos não foram associados a nenhuma pessoa.`);
   return {month,year,dates:cols.map(c=>c.t),people:people.map(p=>({num:p.num,name:p.name,group:p.group,groupLabel:p.groupLabel,cells:p.cells})),warn};
@@ -446,7 +458,7 @@ function parseTokens(toks, sample){
 /* ======================= Modelo ======================= */
 function homeArea(p){
   if(UCIC_GROUPS.has(p.group)) return 'UCIC';
-  if(p.group==='ENFER_INT') return 'REAB';
+  if(p.group==='ENFER_INT') return 'INT'; // turnos sem cor dos especialistas de reabilitação do internamento = internamento
   if(p.group==='CITT') return /\(UCIC\)/i.test(p.name)?'UCIC':'INT';
   if(p.group==='Enf'||p.group==='ENFESC_INT') return 'INT';
   if(/UCIC/i.test(p.groupLabel)) return 'UCIC';
@@ -454,7 +466,8 @@ function homeArea(p){
 }
 function cellToItems(tokens, person){
   tokens = tokens.slice().sort((a,b)=>a.x-b.x);
-  const out={items:[],blocked:false,fi:false,off:[],raw:tokens.map(t=>t.s).join(' ')};
+  const out={items:[],blocked:false,fi:false,off:[],raw:tokens.map(t=>t.s).join(' '),
+    vis:tokens.map(t=>({s:t.s,bg:t.rawbg,top:t.rawtop||null,fg:t.rawfg}))}; // tal como aparece no PDF
   for(let i=0;i<tokens.length;i++){
     const t=tokens[i]; let s=t.s;
     if(s==='Med'||s==='Cir'||s==='Med Cir'||s==='MedCir'){ const last=out.items[out.items.length-1]; if(last){last.area='MEDCIR'; last.medcir=true} continue; }
@@ -462,6 +475,7 @@ function cellToItems(tokens, person){
     const fim=s.match(/^(.*?)(Fi|\d+h)$/); if(fim && fim[1]!==s){ out.fi=true; s=fim[1]; if(!s) continue; }
     if(s==='Fi'||/^\d+h$/.test(s)||t.bg==='FI'&&!TIMES[s]){ out.fi=true; continue; }
     if(BLOCK.has(s)){ out.blocked=true; out.off.push(s); continue; }
+    if(INFO.has(s)){ out.off.push(s); continue; }
     if(OFF.has(s)){ out.off.push(s); continue; }
     let area, prev=false, extra=false;
     if(t.bg==='EXTRA'){extra=true}
@@ -469,6 +483,8 @@ function cellToItems(tokens, person){
     else if(t.bg==='HEMO') area='HEMO';
     else if(t.bg==='CIC') area='CIC';
     else if(t.bg==='REAB') area='REAB';
+    else if(t.bg==='REABENS') area='REABENS';
+    else if(t.bg==='ECO') area='ECO';
     else if(t.bg==='ENSINOS') area='ENSINOS';
     else if(t.bg==='RECOBRO') area='RECOBRO';
     else if(t.fg==='green') area='PACES';
@@ -477,6 +493,15 @@ function cellToItems(tokens, person){
     const tm = TIMES[s];
     out.items.push({code:s,area,prev,extra,fixed:!tm,s:tm?tm[0]:480,e:tm?tm[1]:1200,medcir});
   }
+  // TN1 de paces ou Med Cir = T nesse posto + N na UCIC: cada parte pode ser trocada à parte
+  const split=[];
+  for(const it of out.items){
+    if(it.code==='TN1' && (it.area==='PACES'||it.area==='MEDCIR')){
+      split.push({...it,code:'T',label:'T',sub:'TN1',s:840,e:1200});
+      split.push({...it,code:'N1',label:'N1',sub:'TN1',area:'UCIC',medcir:false,s:1200,e:1950});
+    } else split.push(it);
+  }
+  out.items=split;
   return out;
 }
 
@@ -558,7 +583,8 @@ function eligible(area,p){
     case 'PACES': return has(n,'b')?1:0;
     case 'CIC': return has(n,'c')?1:0;
     case 'MEDCIR': return (p.group==='ENFEMC_UCI'&&!has(n,'d'))?1:0;
-    case 'REAB': case 'ENSINOS': return (p.group==='ENFER_UCIC'||p.group==='ENFER_INT')?1:0;
+    case 'ECO': return 0; // ecostress: ainda sem regra de quem pode fazer; fica fora das trocas
+    case 'REAB': case 'ENSINOS': case 'REABENS': return (p.group==='ENFER_UCIC'||p.group==='ENFER_INT')?1:0;
     case 'RECOBRO': return has(n,'r')?0:1;
     case 'UCIC': if(has(n,'f')) return 4; return (UCIC_GROUPS.has(p.group)||has(n,'e'))?1:0;
     case 'INT': if(has(n,'h')) return 4; if(p.home==='INT'||has(n,'g')) return 1; if(p.home==='UCIC') return 4; return 0;
@@ -822,7 +848,7 @@ const state={me:null,free:new Map(),nogo:new Map()}; // free: di -> Set(item ids
 function shortName(p){ const parts=p.name.replace(/\(UCIC\)|\*/g,'').trim().split(/\s+/); const cap=w=>w.charAt(0)+w.slice(1).toLowerCase(); return parts.length>1?`${cap(parts[0])} ${cap(parts[parts.length-1])}`:cap(parts[0]); }
 function nameOf(num){ if(state.me&&num===state.me.num) return 'Tu'; const p=DATA.byNum.get(num); return p?shortName(p):num; }
 function shortCode(it){ if(it.half) return ({d:'MT',n:'N',m:'M',t:'T',pm:'M',pt:'T'})[it.half]||it.code; return it.code; }
-function chip(it){ const k=it.extra?'EXTRA':(it.medcir?'PLAIN':it.area); const cls=['HEMO','PREV','CIC','REAB','ENSINOS','RECOBRO','PACES','EXTRA'].includes(k)?` k-${k}`:'';
+function chip(it){ const k=it.extra?'EXTRA':(it.medcir?'PLAIN':it.area); const cls=['HEMO','PREV','CIC','REAB','REABENS','ENSINOS','RECOBRO','PACES','EXTRA','ECO'].includes(k)?` k-${k}`:'';
   return `<span class="code${cls}" title="${esc(AREA_LABEL[it.area]||'')}">${esc(shortCode(it))}${it.medcir?'<span class="mc">Med Cir</span>':''}</span>`; }
 function itemText(it){ if(it.prev) return it.half?({d:'prevenção de dia',n:'prevenção de noite',pm:'prevenção de manhã (6 h)',pt:'prevenção de tarde (6 h)'})[it.half]||'prevenção':'prevenção'; const a=AREA_LABEL[it.area]||''; return it.half?`${a}, ${it.half==='m'?'manhã':'tarde'} do ${it.code}`:a; }
 
@@ -876,6 +902,24 @@ function choose(num){
   $('#cal-title').textContent=`Horário de ${shortName(state.me)}`; saveMarks();
   renderCal(); updateBar(); $('#sec-cal').scrollIntoView({block:'start'});
 }
+// mostra cada sigla com as cores exatas do PDF (uma ou duas cores, letra incluída)
+const isPlain=c=>!c||((Math.max(...c)-Math.min(...c))<40&&Math.min(...c)>150);
+const rgb=c=>`rgb(${c[0]},${c[1]},${c[2]})`;
+function visChips(vis){
+  const out=[];
+  for(const v of vis){
+    if((v.s==='Med'||v.s==='Cir'||/^Med ?Cir$/.test(v.s)) && out.length){ out[out.length-1].mc=true; continue; }
+    out.push({...v});
+  }
+  return out.map(v=>{
+    const bot=isPlain(v.bg)?null:v.bg, top=isPlain(v.top)?null:v.top;
+    let bgcss='#ffffff';
+    if(top&&bot&&Math.abs(top[0]-bot[0])+Math.abs(top[1]-bot[1])+Math.abs(top[2]-bot[2])>60) bgcss=`linear-gradient(${rgb(top)} 0 50%, ${rgb(bot)} 50% 100%)`;
+    else if(bot) bgcss=rgb(bot); else if(top) bgcss=rgb(top);
+    const fg=v.fg?rgb(v.fg):'#000';
+    return `<span class="code" style="background:${bgcss};color:${fg}">${esc(v.s)}${v.mc?'<span class="mc">Med Cir</span>':''}</span>`;
+  }).join('');
+}
 function renderCal(){
   const me=state.me; const byMonth=new Map();
   DATA.dates.forEach((t,di)=>{ const d=new Date(t); const k=d.getUTCFullYear()*12+d.getUTCMonth(); if(!byMonth.has(k)) byMonth.set(k,[]); byMonth.get(k).push(di); });
@@ -887,9 +931,9 @@ function renderCal(){
       const we=wday(t)===0||wday(t)===6, hol=isHoliday(t), past=di<TODAY_IDX;
       const fr=state.free.has(di), ngSet=state.nogo.get(di), ng=!!ngSet; const ngTxt=ng?(ngSet.size===3?'não posso':'não '+['M','T','N'].filter(k=>ngSet.has(k)).join('/')):'';
       let codes='';
-      if(c) codes+=c.off.map(o=>`<span class="code ${BLOCK.has(o)?'k-BLOCK':'k-OFF'}">${esc(o)}</span>`).join('');
-      codes+=items.map(chip).join('');
-      if(c){ if(c.fi) codes+=`<span class="code k-FI">Fi</span>`; if(c.inLeave) codes+=`<span class="code k-LEAVE">férias</span>`; }
+      if(c && c.vis && c.vis.length) codes+=visChips(c.vis);
+      else { if(c) codes+=c.off.map(o=>`<span class="code ${BLOCK.has(o)?'k-BLOCK':'k-OFF'}">${esc(o)}</span>`).join(''); codes+=items.map(chip).join(''); if(c&&c.fi) codes+=`<span class="code k-FI">Fi</span>`; }
+      if(c && c.inLeave) codes+=`<span class="code k-LEAVE">férias</span>`;
       html+=`<button class="day${we?' we':''}${hol?' hol':''}${past?' past':''}${fr?' free':''}${ng?' nogo':''}" data-di="${di}" ${past?'disabled':''} aria-label="${fmtDate(t)}"><span class="dn"><b>${new Date(t).getUTCDate()}</b>${hol?'<span>fer.</span>':''}</span>${codes}${fr?'<span class="flag f">libertar</span>':''}${ng?`<span class="flag n">${ngTxt}</span>`:''}</button>`;
     }
     html+='</div></div>';
@@ -1043,9 +1087,9 @@ function renderUnit(i,u,r){
 /* tabela de siglas */
 (function(){
   const rows=Object.entries(TIMES).sort((a,b)=>a[0].localeCompare(b[0],'pt',{numeric:true})).map(([c,[a,b]])=>[c,`${hm(a)}–${hm(b)}`,fmtH(b-a).slice(1)]);
-  const other=[['D','Descanso'],['DC','Descanso complementar'],['DS','Descanso semanal'],['F','Folga'],['Fe','Folga de feriado'],['L','Férias'],['LP','Licença parental'],['A','Ausência médica'],['Cgs','Comissão gratuita de serviço'],['No','Nojo'],['Fi','Formação interna']];
+  const other=[['D','Descanso'],['DC','Descanso complementar'],['DS','Descanso semanal'],['F','Folga'],['Fe','Folga de feriado'],['L','Férias'],['LP','Licença parental'],['A','Ausência médica'],['Cgs','Comissão gratuita de serviço'],['No','Nojo'],['UCIC','Anotação de posto (UCIC)'],['G','Greve'],['PP','Prolongamento não programado'],['Fi','Formação interna']];
   $('#codes-table').innerHTML=`<table style="border-collapse:collapse;width:100%"><thead><tr><th style="text-align:left;padding:4px 8px 4px 0">Sigla</th><th style="text-align:left;padding:4px 8px">Horário</th><th style="text-align:right;padding:4px 0">Horas</th></tr></thead><tbody class="tabnums">${rows.map(r=>`<tr style="border-top:1px solid var(--line)"><td style="padding:3px 8px 3px 0"><span class="code">${r[0]}</span></td><td style="padding:3px 8px">${r[1]}</td><td style="text-align:right">${r[2]}</td></tr>`).join('')}</tbody></table>
-  <p style="margin:10px 0 4px"><strong>Sem horário</strong></p><ul style="margin:0;padding-left:1.1em">${other.map(([c,t])=>`<li><span class="code ${['L','LP','A','Cgs','No'].includes(c)?'k-BLOCK':c==='Fi'?'k-FI':'k-OFF'}">${c}</span> ${t}</li>`).join('')}</ul>
+  <p style="margin:10px 0 4px"><strong>Sem horário</strong></p><ul style="margin:0;padding-left:1.1em">${other.map(([c,t])=>`<li><span class="code ${['L','LP','A','Cgs','No','G'].includes(c)?'k-BLOCK':c==='Fi'?'k-FI':'k-OFF'}">${c}</span> ${t}</li>`).join('')}</ul>
   <p class="muted" style="margin:8px 0 0">Siglas sem horário conhecido (RC, REC, PMD, Prv, HE…) ficam fora das trocas.</p>`;
 })();
 
