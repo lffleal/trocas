@@ -427,8 +427,10 @@ function parseTokens(toks, sample){
     if(sample){ const band=sample(t.x+t.w*0.15, t.y+t.h*0.28, t.x+t.w*0.85, t.y+t.h*0.52); // metade de baixo do fundo, por baixo das letras
       const glyph=sample(t.x+0.25, t.y-t.h*0.72, t.x+t.w-0.25, t.y-t.h*0.05);           // metade de cima, entre as letras
       bgc=band.bg; fgc=glyph.fg; topc=glyph.bg; }
-    let bgClass=classBg(bgc,fgc,t.s);
+    // em ecrãs onde as letras ocupam quase toda a zona de cima, a "cor de cima" é a das letras e a "cor da letra" sai igual ao fundo: corrige
+    if(topc && d2(fgc,bgc)<90*90){ fgc=topc; topc=null; }
     if(topc && d2(topc,fgc)<80*80) topc=null; // a "cor de cima" era só a cor das letras
+    let bgClass=classBg(bgc,fgc,t.s);
     if(topc){ const tc=classBg(topc,fgc,t.s);
       // células de duas cores: roxo em cima (reabilitação) e amarelo em baixo (ensinos)
       if((tc==='REAB'&&bgClass==='ENSINOS')||(tc==='ENSINOS'&&bgClass==='REAB')) bgClass='REABENS';
