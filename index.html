@@ -707,25 +707,28 @@ function scoreSolution(moves, evals){
       if(a==='F'||a==='D') return (b==='F'||b==='D')?'noite tipo sábado':'noite tipo domingo';
       if(a==='B') return 'noite tipo sábado';
       return b==='F'?'noite de véspera de feriado':'noite de semana'; }
-    if(a==='F'||a==='D') return 'turno de domingo/feriado';
-    if(a==='B') return i.s>=780?'tarde de sábado':i.e<=900?'manhã de sábado':'MT de sábado';
-    return 'turno de dia de semana'; };
+    if(a==='F'||a==='D') return 'domingo/feriado';
+    if(a==='B') return 'sábado';
+    return 'dia de semana'; };
+  let qNote=false;
   let mismatch=0, sameShift=true, sameDay=true, dayDiff=false;
   // pagar fim de semana com turno igual no mesmo dia: M de sábado por M de sábado, T de domingo/feriado por T de domingo/feriado
   const wk=i=>{ const k=dT(DATA.dates[i.di]); return k==='B'?'B':(k==='D'||k==='F')?'D':'S'; };
-  let wkInv=false, exactW=true;
+  let wkInv=false, exactW=true, wkScore=0; const meNum=moves[0].from;
   for(const [pn,g] of persons){ if(!g.give.length||!g.recv.length){ sameShift=false; sameDay=false; mismatch+=2; exactW=false; continue; }
     if(key(g.give,cat)!==key(g.recv,cat)){ mismatch+=1; sameShift=false; }
     if([...g.give,...g.recv].some(i=>wk(i)!=='S')) wkInv=true;
-    const ck=i=>cat(i)+(wk(i)==='S'?'':wk(i)); if(key(g.give,ck)!==key(g.recv,ck)) exactW=false;
+    const ck=i=>cat(i)+(wk(i)==='S'?'':wk(i)); if(key(g.give,ck)!==key(g.recv,ck)){ exactW=false; if([...g.give,...g.recv].some(i=>wk(i)!=='S')) wkScore+= pn===meNum?10:1; }
     // horas de qualidade: compara a proporção de horas de qualidade de quem dá e de quem recebe
     // (T de sábado = M ou T de domingo; N de sábado = N de domingo para feriado; N de feriado para dia de semana = N de domingo)
     const fr=arr=>{ const h=arr.reduce((a,i)=>a+(i.e-i.s),0); return h? arr.reduce((a,i)=>a+qMin(i),0)/h : 0; };
     const dqf=Math.abs(fr(g.give)-fr(g.recv)); const diff= dqf<0.05?0 : dqf<=0.34?1 : 2; // 0 igual · 1 quase · 2 diferente
-    if(diff){ sameDay=false; const n=nameOf(pn);
-      if(diff===1){ if(!issues.includes('Horas de qualidade quase iguais')) add(1,'Horas de qualidade quase iguais'); }
-      else { mismatch+=1; dayDiff=true; if(!issues.includes('Horas de qualidade diferentes')) add(2,'Horas de qualidade diferentes'); } } }
-  return {lvl,issues,deltas,sumAbs,people:persons.size,prevInfo,mismatch,sameShift,sameDay,prevLoss,dayDiff,wkExact:(wkInv&&!exactW)?1:0,wkSame:wkInv&&exactW};
+    if(diff){ sameDay=false; if(diff===2){ mismatch+=1; dayDiff=true; }
+      if(!qNote){ qNote=true; const gT=[...new Set(g.give.map(qName))].join(' e '), rT=[...new Set(g.recv.map(qName))].join(' e ');
+        const nn=nameOf(pn); const t=`${nn==='Tu'?'':nn+': '}${nn==='Tu'?gT.charAt(0).toUpperCase()+gT.slice(1):gT} por ${rT} (horas de qualidade ${diff===1?'quase iguais':'diferentes'})`; add(2,t); } } }
+  // fim de semana/feriado pago com outro turno ou outro dia: nunca é ideal, no máximo aceitável
+  if(wkInv && !exactW && lvl<2) lvl=2;
+  return {lvl,issues,deltas,sumAbs,people:persons.size,prevInfo,mismatch,sameShift,sameDay,prevLoss,dayDiff,wkExact:wkScore,wkSame:wkInv&&exactW};
 }
 
 function search(me, unitItems, nogo, budgetMs=3500){
