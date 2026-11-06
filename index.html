@@ -270,7 +270,7 @@ const PDFJS_BASES = window.__PDFJS_BASE ? [window.__PDFJS_BASE] : ['./','https:/
 /* ======================= Regras do serviço ======================= */
 // identificadores codificados: cada pessoa é reconhecida por uma impressão digital do seu número
 const cyrb53=(str,seed=7)=>{let h1=0xdeadbeef^seed,h2=0x41c6ce57^seed;for(let i=0,ch;i<str.length;i++){ch=str.charCodeAt(i);h1=Math.imul(h1^ch,2654435761);h2=Math.imul(h2^ch,1597334677);}h1=Math.imul(h1^(h1>>>16),2246822507);h1^=Math.imul(h2^(h2>>>13),3266489909);h2=Math.imul(h2^(h2>>>16),2246822507);h2^=Math.imul(h1^(h1>>>13),3266489909);return 4294967296*(2097151&h2)+(h1>>>0);};
-const RULES={"101p8qclzyj":"b","1278qeeih7t":"a","135uttkqjs9":"r","137jv17a697":"ir","14ik80lk27a":"eu","15t80g8ygka":"b","18pw6hbz48x":"a","1a8l6l9jld6":"r","1akhrq1c69p":"c","1b8jgoqx1to":"b","1cwz47f5w8d":"eru","1ht6gip9wzv":"eu","1i0onv8mweh":"b","1obwmfh2ws8":"b","1roop9nady4":"ir","1t541s2cjsq":"cfr","1yl1pwyx682":"a","239v1y7kbfz":"eru","27u0o5z0ltn":"c","2824gwsrw1v":"ir","2831vl901mw":"cgntz","2bwwk9fcc2j":"ir","2d0kmrfasyx":"a","2mn28jdj1f":"frw","30s7zfxnf4":"x","4cguqb8k12":"a","58mf8duvfu":"hr","bpj7c9rx8b":"ir","jo22qnct9x":"crw","jvl3739zoc":"a","n3zhm0b8ji":"a","oxsghnc0lj":"b","rcwz5npcm1":"dr","rj2k07tsr7":"mr","uy00hqpp52":"i","xj1xmnq0kl":"br","y8nrski9a":"hr"};
+const RULES={"v74wwutuqy":"r","101p8qclzyj":"b","1278qeeih7t":"a","135uttkqjs9":"r","137jv17a697":"ir","14ik80lk27a":"eu","15t80g8ygka":"b","18pw6hbz48x":"a","1a8l6l9jld6":"r","1akhrq1c69p":"c","1b8jgoqx1to":"b","1cwz47f5w8d":"eru","1ht6gip9wzv":"eu","1i0onv8mweh":"b","1obwmfh2ws8":"b","1roop9nady4":"ir","1t541s2cjsq":"cfr","1yl1pwyx682":"a","239v1y7kbfz":"eru","27u0o5z0ltn":"c","2824gwsrw1v":"ir","2831vl901mw":"cgntz","2bwwk9fcc2j":"ir","2d0kmrfasyx":"a","2mn28jdj1f":"fnrw","30s7zfxnf4":"x","4cguqb8k12":"a","58mf8duvfu":"hr","bpj7c9rx8b":"ir","jo22qnct9x":"crw","jvl3739zoc":"a","n3zhm0b8ji":"a","oxsghnc0lj":"b","rcwz5npcm1":"dr","rj2k07tsr7":"mr","uy00hqpp52":"i","xj1xmnq0kl":"br","y8nrski9a":"hr"};
 const _hc=new Map();
 const has=(num,c)=>{ let k=_hc.get(num); if(k===undefined){ k=cyrb53('tt|'+num).toString(36); _hc.set(num,k); } const v=RULES[k]; return !!v && v.includes(c); };
 const UCIC_GROUPS = new Set(['ENFER_UCIC','ENFEMC_UCI','ENF_UCIC','ENFESC_UCI']);
@@ -664,7 +664,7 @@ function scoreSolution(moves, evals){
   const persons=new Map();
   for(const m of moves){ for(const who of [m.from,m.to]) if(!persons.has(who)) persons.set(who,{give:[],recv:[]});
     persons.get(m.from).give.push(...m.items); persons.get(m.to).recv.push(...m.items); }
-  const deltas=[]; let sumAbs=0; const prevInfo=[];
+  const deltas=[]; let sumAbs=0; const prevInfo=[]; let prevLoss=false;
   for(const [num,g] of persons){ const d=presentialMin(g.recv)-presentialMin(g.give); deltas.push({num,d}); sumAbs+=Math.abs(d);
     if(Math.abs(d)>150) add(3,'Diferença de horas grande'); else if(d!==0) add(2,'Pequena diferença de horas');
     if(has(num,'z') && d>0) add(4,`Restrição pessoal de horas de um dos colegas envolvidos`);
@@ -672,7 +672,9 @@ function scoreSolution(moves, evals){
     g.recv.filter(i=>i.prev).forEach(i=>prevParts(i).forEach(x=>pr[x.type]=(pr[x.type]||0)+x.min));
     const ks=new Set([...Object.keys(pg),...Object.keys(pr)]); let unbal=false; for(const k of ks) if((pg[k]||0)!==(pr[k]||0)) unbal=true;
     if(ks.size) prevInfo.push({num,give:pg,recv:pr,unbal});
-    if(unbal) add(4,'Prevenção a pagar: alguém dá e recebe prevenção de horas ou tipo diferentes');
+    const gTot=Object.values(pg).reduce((a,b)=>a+b,0), rTot=Object.values(pr).reduce((a,b)=>a+b,0);
+    if(gTot>rTot){ prevLoss=true; const n=nameOf(num); add(5,`${n==='Tu'?'Ficas':n+' fica'} sem ${gTot-rTot>=60?Math.round((gTot-rTot)/60)+' h de ':''}prevenção, sem a recuperar noutro dia (só em situação urgente)`); }
+    else if(unbal) add(4,'Prevenção a pagar: alguém dá e recebe prevenção de horas ou tipo diferentes');
     const gh=g.give.some(i=>i.area==='HEMO'), rh=g.recv.some(i=>i.area==='HEMO'); if(gh!==rh && g.give.length && g.recv.length) add(2,'Hemodinâmica trocada por outro posto');
   }
   for(const m of moves) if(m.items.some(i=>i.extra)) add(4,'Envolve um turno extra');
@@ -695,11 +697,29 @@ function scoreSolution(moves, evals){
   const cat=i=> i.prev ? 'P'+(i.e-i.s) : i.night ? 'N' : (i.s<720 && i.e>=1140) ? 'MT' : i.s<720 ? 'M' : 'T';
   const dayT=i=>{ const t=DATA.dates[i.di]; return (wday(t)===0||wday(t)===6||isHoliday(t))?'FDS':'SEM'; };
   const key=(arr,f)=>arr.map(f).sort().join(',');
-  let mismatch=0, sameShift=true, sameDay=true;
-  for(const [,g] of persons){ if(!g.give.length||!g.recv.length){ sameShift=false; sameDay=false; mismatch+=2; continue; }
+  // horas de qualidade: domingo e feriado contam o dia inteiro; sábado conta a partir das 13:00 (se não for feriado)
+  const dT=t=> isHoliday(t)?'F':wday(t)===0?'D':wday(t)===6?'B':'S';
+  const qSeg=(t,a,b)=>{ const k=dT(t); if(k==='F'||k==='D') return b-a; if(k==='B') return Math.max(0,b-Math.max(a,780)); return 0; };
+  const qMin=i=>{ const t=DATA.dates[i.di]; let m=qSeg(t,i.s,Math.min(i.e,1440)); if(i.e>1440) m+=qSeg(t+86400000,0,i.e-1440); return m; };
+  const qName=i=>{ const t=DATA.dates[i.di], a=dT(t);
+    if(i.e>1440){ const b=dT(t+86400000);
+      if(a==='F'||a==='D') return (b==='F'||b==='D')?'noite tipo sábado':'noite tipo domingo';
+      if(a==='B') return 'noite tipo sábado';
+      return b==='F'?'noite de véspera de feriado':'noite de semana'; }
+    if(a==='F'||a==='D') return 'turno de domingo/feriado';
+    if(a==='B') return i.s>=780?'tarde de sábado':i.e<=900?'manhã de sábado':'MT de sábado';
+    return 'turno de dia de semana'; };
+  let mismatch=0, sameShift=true, sameDay=true, dayDiff=false;
+  for(const [pn,g] of persons){ if(!g.give.length||!g.recv.length){ sameShift=false; sameDay=false; mismatch+=2; continue; }
     if(key(g.give,cat)!==key(g.recv,cat)){ mismatch+=1; sameShift=false; }
-    if(key(g.give,dayT)!==key(g.recv,dayT)){ mismatch+=1; sameDay=false; } }
-  return {lvl,issues,deltas,sumAbs,people:persons.size,prevInfo,mismatch,sameShift,sameDay};
+    // horas de qualidade: compara a proporção de horas de qualidade de quem dá e de quem recebe
+    // (T de sábado = M ou T de domingo; N de sábado = N de domingo para feriado; N de feriado para dia de semana = N de domingo)
+    const fr=arr=>{ const h=arr.reduce((a,i)=>a+(i.e-i.s),0); return h? arr.reduce((a,i)=>a+qMin(i),0)/h : 0; };
+    const dqf=Math.abs(fr(g.give)-fr(g.recv)); const diff= dqf<0.05?0 : dqf<=0.34?1 : 2; // 0 igual · 1 quase · 2 diferente
+    if(diff){ sameDay=false; const n=nameOf(pn);
+      if(diff===1){ if(!issues.includes('Horas de qualidade quase iguais')) add(1,'Horas de qualidade quase iguais'); }
+      else { mismatch+=1; dayDiff=true; if(!issues.includes('Horas de qualidade diferentes')) add(2,'Horas de qualidade diferentes'); } } }
+  return {lvl,issues,deltas,sumAbs,people:persons.size,prevInfo,mismatch,sameShift,sameDay,prevLoss,dayDiff};
 }
 
 function search(me, unitItems, nogo, budgetMs=3500){
@@ -775,6 +795,34 @@ function search(me, unitItems, nogo, budgetMs=3500){
     }
     if(!within()) break;
   }
+  // cobertura: o colega habilitado está ocupado nesse dia noutro posto (UCIC, internamento…); outro colega faz-lhe esse turno
+  if(unitItems.length===1 && (unitItems[0].prev || ['REAB','REABENS','ENSINOS','CIC','PACES','MEDCIR','HEMO','RECOBRO','UCIC'].includes(unitItems[0].area))){
+    const U=unitItems[0]; const kindU=x=>!!x.prev===!!U.prev; const tc0=performance.now(); const okT=()=>performance.now()-tc0<2000;
+    // primeiro quem está na UCIC ou no internamento (postos que quase todos fazem); os outros postos ficam para depois
+    const easyB=a=>a==='UCIC'||a==='INT';
+    const cands=[]; for(const {p,l} of others.map(p=>({p,l:eligUnit(unitItems,p)})).filter(x=>x.l)){
+      const bl=p.base.filter(b=>!b.prev && b.di===U.di && b.abs<U.abe && U.abs<b.abe);
+      if(bl.length===1 && !bl[0].fixed) cands.push({p,l,B:bl[0]}); }
+    cands.sort((a,b)=>easyB(b.B.area)-easyB(a.B.area));
+    outerC: for(const {p:Q1,l:l1,B} of cands){
+      const covN=null; // o posto que fica livre é sempre assegurado por quem cobre (habilitado)
+      // o turno que fica por cobrir pode ser de qualquer posto, desde que quem o cobre esteja habilitado
+      const backs=tr(Q1).filter(x=>kindU(x) && !x.half && x.id!==B.id && !backToMe(x) && eligible(x.area,me) && Math.abs(x.hours-U.hours)<=150);
+      for(const Q2 of others){ if(Q2===Q1) continue; const l2=eligible(B.area,Q2); if(!l2) continue;
+        if(!evaluate(Q2,[],[B])) continue;
+        const pays=tr(Q2).filter(x=>!x.half && Math.abs(x.hours-B.hours)<=150);
+        // a) quem cobre paga-me diretamente
+        for(const X of pays){ if(!kindU(X)||backToMe(X)||!eligible(X.area,me)) continue; const em=evaluate(me,unitItems,[X],nogo); if(!em) continue;
+          const e1=evaluate(Q1,[B],[U]); if(!e1) continue; const e2=evaluate(Q2,[X],[B]); if(!e2) continue;
+          push([{from:me.num,to:Q1.num,items:[U]},{from:Q1.num,to:Q2.num,items:[B]},{from:Q2.num,to:me.num,items:[X]}],[em,e1,e2],mergeNotes(eligNote(l1,Q1),eligNote(l2,Q2),covN)); }
+        // b) pago ao colega habilitado e ele paga a quem o cobre
+        for(const X1 of backs){ const em=evaluate(me,unitItems,[X1],nogo); if(!em) continue;
+          for(const X2 of pays){ if(X2.prev||X2.id===X1.id||!eligible(X2.area,Q1)) continue;
+            const e1=evaluate(Q1,[B,X1],[U,X2]); if(!e1) continue; const e2=evaluate(Q2,[X2],[B]); if(!e2) continue;
+            push([{from:me.num,to:Q1.num,items:[U]},{from:Q1.num,to:me.num,items:[X1]},{from:Q1.num,to:Q2.num,items:[B]},{from:Q2.num,to:Q1.num,items:[X2]}],[em,e1,e2],mergeNotes(eligNote(l1,Q1),eligNote(l2,Q2),covN));
+            if(!okT()) break outerC; } }
+        if(!okT()) break outerC; } }
+  }
   // MT dividido: um colega faz a M, outro a T, e eu pago um turno a cada um
   if(unitItems.length===1 && !unitItems[0].prev && !unitItems[0].half && within()){
     const parts=splitPrev(unitItems[0]);
@@ -821,7 +869,7 @@ function search(me, unitItems, nogo, budgetMs=3500){
   // ordem: ideais/quase ideais diretas → ideais/quase ideais com 3+ pessoas → restantes por nível
   const tier=x=> x.lvl<=2 ? (x.people===2?0:1) : 2;
   sols.forEach(x=>x.tier=tier(x));
-  sols.sort((a,b)=>a.tier-b.tier||a.lvl-b.lvl||a.people-b.people||a.mismatch-b.mismatch||a.sumAbs-b.sumAbs||nItems(a)-nItems(b)||a.issues.length-b.issues.length);
+  const dd=x=>(x.tier<2&&x.dayDiff)?1:0; sols.sort((a,b)=>a.tier-b.tier||dd(a)-dd(b)||a.lvl-b.lvl||a.people-b.people||a.mismatch-b.mismatch||a.sumAbs-b.sumAbs||nItems(a)-nItems(b)||a.issues.length-b.issues.length);
   // mantém só a melhor variante de cada combinação de pessoas e dias
   const best=new Set(); const uniq=[];
   for(const s of sols){ const k=s.moves.map(m=>`${m.from}>${m.to}@${m.items.map(i=>i.di).join('+')}`).join('|'); if(best.has(k)) continue; best.add(k); uniq.push(s); }
@@ -1022,7 +1070,7 @@ function addSplitCombos(me,u,r,nogo){
     r.sols.push(sol);
   }
   // dentro de cada grupo: primeiro o nível; em empate, o bloco inteiro antes da divisão por colegas
-  r.sols.sort((a,b)=>Math.floor(a.tier)-Math.floor(b.tier)||a.lvl-b.lvl||(a.parts?1:0)-(b.parts?1:0)||a.people-b.people||(a.mismatch||0)-(b.mismatch||0)||a.sumAbs-b.sumAbs);
+  r.sols.sort((a,b)=>Math.floor(a.tier)-Math.floor(b.tier)||((a.tier<2&&a.dayDiff)?1:0)-((b.tier<2&&b.dayDiff)?1:0)||a.lvl-b.lvl||(a.parts?1:0)-(b.parts?1:0)||a.people-b.people||(a.mismatch||0)-(b.mismatch||0)||a.sumAbs-b.sumAbs);
 }
 function moveHtml(m){ return `<li><span class="who">${esc(nameOf(m.from))} → ${esc(nameOf(m.to))}</span><span class="what">${m.items.map(it=>`${chip(it)} ${esc(fmtDate(it.t))} · ${hm(it.s)}–${hm(it.e)} · ${esc(itemText(it))}`).join(' + ')}</span></li>`; }
 function hClass(min){ const a=Math.abs(min); return a===0?'ok':(a<=150?'warn':'bad'); }
@@ -1031,7 +1079,8 @@ function solHtml(s){
   const hrs = ds.every(d=>d.d===0) ? `<span class="v ok">iguais para todos</span>`
     : ds.map(d=>`<div class="hrow"><span>${esc(nameOf(d.num))}</span><span class="v ${hClass(d.d)}">${d.d===0?'=':fmtH(d.d)}</span></div>`).join('');
   const split=s.moves.length===4 && s.moves[0].items[0].half && s.moves[2].items[0].parent===s.moves[0].items[0].parent;
-  const tags=[s.parts?'Bloco dividido por colegas diferentes':'',split?'MT dividido: um colega faz a M, outro a T':'',s.sameShift?'Mesmo tipo de turno':'',s.sameDay?'Mesmo tipo de dia':''].filter(Boolean);
+  const u0=s.moves[0].items[0]; const cov=s.moves.find((m,k)=>k>0 && m.from===s.moves[0].to && m.to!==state.me.num && m.items.some(i=>i.di===u0.di) && !m.items.some(i=>s.moves[0].items.some(g=>g.id===i.id||(g.code===i.code&&g.di===i.di))));
+  const tags=[cov?`Cobertura: ${nameOf(cov.to)} faz o ${shortCode(cov.items[0])} de ${nameOf(cov.from)}, para ${nameOf(cov.from)} poder fazer o teu turno`:'',s.parts?'Bloco dividido por colegas diferentes':'',split?'MT dividido: um colega faz a M, outro a T':'',s.sameShift?'Mesmo tipo de turno':'',s.sameDay?'Mesmo tipo de dia':''].filter(Boolean);
   const owe=[]; for(const d of ds) if(d.d<0) owe.push(`${d.num===state.me.num?'Ficas':esc(nameOf(d.num))+' fica'} a dever ${fmtH(d.d).slice(1)} de trabalho`);
   for(const p of s.prevInfo){ const g=Object.values(p.give).reduce((a,b)=>a+b,0), rc=Object.values(p.recv).reduce((a,b)=>a+b,0);
     if(g>rc) owe.push(`${p.num===state.me.num?'Ficas':esc(nameOf(p.num))+' fica'} a dever ${fmtH(rc-g).slice(1)} de prevenção`);
@@ -1066,11 +1115,12 @@ function renderUnit(i,u,r){
     let h=`<div class="unit-h"><h3>${fmtDate(u[0].t)}</h3>${u.map(chip).join('')}<span class="small muted">${esc(u.map(itemText).join(' + '))}</span></div>`;
     if(!r.sols.length) h+='<p class="muted" style="margin:0">Não encontrei trocas que cumpram as regras.</p>';
     else {
-      const t0=r.sols.filter(x=>x.tier<1), t1=r.sols.filter(x=>x.tier>=1&&x.tier<2), t2=r.sols.filter(x=>x.tier>=2&&x.lvl<=4), t3=r.sols.filter(x=>x.tier>=2&&x.lvl>=5);
+      const t0=r.sols.filter(x=>x.tier<1), t1=r.sols.filter(x=>x.tier>=1&&x.tier<2), t2=r.sols.filter(x=>x.tier>=2&&x.lvl<=4), t3a=r.sols.filter(x=>x.tier>=2&&x.lvl>=5); const alt=t0.length+t1.length+t2.length+t3a.filter(x=>!x.prevLoss).length; const lossHidden=alt?t3a.filter(x=>x.prevLoss).length:0; const t3=alt?t3a.filter(x=>!x.prevLoss):t3a;
       h+=block('a','Melhores · trocas diretas (tu e um colega)',t0,'Não há trocas diretas ideais ou aceitáveis.');
       h+=block('b','Melhores · com 3 ou mais pessoas',t1,'Não há trocas ideais ou aceitáveis com mais pessoas.');
       h+=block('c','Outras opções',t2,'Não há outras opções.');
       h+=block('e','Só com autorização da chefia',t3,'Nenhuma.');
+      if(lossHidden) h+=`<p class="small muted" style="margin:0">Há mais ${lossHidden} troca${lossHidden>1?'s':''} em que alguém fica sem prevenção; só aparecem quando não há outra solução.</p>`;
     }
     if(r.timedOut) h+='<p class="small muted" style="margin:0">A pesquisa parou ao fim de alguns segundos; pode haver mais combinações longas.</p>';
     el.innerHTML=h;
