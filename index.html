@@ -711,8 +711,13 @@ function scoreSolution(moves, evals){
     if(a==='B') return i.s>=780?'tarde de sábado':i.e<=900?'manhã de sábado':'MT de sábado';
     return 'turno de dia de semana'; };
   let mismatch=0, sameShift=true, sameDay=true, dayDiff=false;
-  for(const [pn,g] of persons){ if(!g.give.length||!g.recv.length){ sameShift=false; sameDay=false; mismatch+=2; continue; }
+  // pagar fim de semana com turno igual no mesmo dia: M de sábado por M de sábado, T de domingo/feriado por T de domingo/feriado
+  const wk=i=>{ const k=dT(DATA.dates[i.di]); return k==='B'?'B':(k==='D'||k==='F')?'D':'S'; };
+  let wkInv=false, exactW=true;
+  for(const [pn,g] of persons){ if(!g.give.length||!g.recv.length){ sameShift=false; sameDay=false; mismatch+=2; exactW=false; continue; }
     if(key(g.give,cat)!==key(g.recv,cat)){ mismatch+=1; sameShift=false; }
+    if([...g.give,...g.recv].some(i=>wk(i)!=='S')) wkInv=true;
+    const ck=i=>cat(i)+(wk(i)==='S'?'':wk(i)); if(key(g.give,ck)!==key(g.recv,ck)) exactW=false;
     // horas de qualidade: compara a proporção de horas de qualidade de quem dá e de quem recebe
     // (T de sábado = M ou T de domingo; N de sábado = N de domingo para feriado; N de feriado para dia de semana = N de domingo)
     const fr=arr=>{ const h=arr.reduce((a,i)=>a+(i.e-i.s),0); return h? arr.reduce((a,i)=>a+qMin(i),0)/h : 0; };
@@ -720,7 +725,7 @@ function scoreSolution(moves, evals){
     if(diff){ sameDay=false; const n=nameOf(pn);
       if(diff===1){ if(!issues.includes('Horas de qualidade quase iguais')) add(1,'Horas de qualidade quase iguais'); }
       else { mismatch+=1; dayDiff=true; if(!issues.includes('Horas de qualidade diferentes')) add(2,'Horas de qualidade diferentes'); } } }
-  return {lvl,issues,deltas,sumAbs,people:persons.size,prevInfo,mismatch,sameShift,sameDay,prevLoss,dayDiff};
+  return {lvl,issues,deltas,sumAbs,people:persons.size,prevInfo,mismatch,sameShift,sameDay,prevLoss,dayDiff,wkExact:(wkInv&&!exactW)?1:0,wkSame:wkInv&&exactW};
 }
 
 function search(me, unitItems, nogo, budgetMs=3500){
@@ -870,7 +875,7 @@ function search(me, unitItems, nogo, budgetMs=3500){
   // ordem: ideais/quase ideais diretas → ideais/quase ideais com 3+ pessoas → restantes por nível
   const tier=x=> x.lvl<=2 ? (x.people===2?0:1) : 2;
   sols.forEach(x=>x.tier=tier(x));
-  const dd=x=>(x.tier<2&&x.dayDiff)?1:0; sols.sort((a,b)=>a.tier-b.tier||dd(a)-dd(b)||a.lvl-b.lvl||a.people-b.people||a.mismatch-b.mismatch||a.sumAbs-b.sumAbs||nItems(a)-nItems(b)||a.issues.length-b.issues.length);
+  const dd=x=>(x.tier<2&&x.dayDiff)?1:0; sols.sort((a,b)=>a.tier-b.tier||dd(a)-dd(b)||(a.wkExact||0)-(b.wkExact||0)||a.lvl-b.lvl||a.people-b.people||a.mismatch-b.mismatch||a.sumAbs-b.sumAbs||nItems(a)-nItems(b)||a.issues.length-b.issues.length);
   // mantém só a melhor variante de cada combinação de pessoas e dias
   const best=new Set(); const uniq=[];
   for(const s of sols){ const k=s.moves.map(m=>`${m.from}>${m.to}@${m.items.map(i=>i.di).join('+')}`).join('|'); if(best.has(k)) continue; best.add(k); uniq.push(s); }
@@ -1071,7 +1076,7 @@ function addSplitCombos(me,u,r,nogo){
     r.sols.push(sol);
   }
   // dentro de cada grupo: primeiro o nível; em empate, o bloco inteiro antes da divisão por colegas
-  r.sols.sort((a,b)=>Math.floor(a.tier)-Math.floor(b.tier)||((a.tier<2&&a.dayDiff)?1:0)-((b.tier<2&&b.dayDiff)?1:0)||a.lvl-b.lvl||(a.parts?1:0)-(b.parts?1:0)||a.people-b.people||(a.mismatch||0)-(b.mismatch||0)||a.sumAbs-b.sumAbs);
+  r.sols.sort((a,b)=>Math.floor(a.tier)-Math.floor(b.tier)||((a.tier<2&&a.dayDiff)?1:0)-((b.tier<2&&b.dayDiff)?1:0)||(a.wkExact||0)-(b.wkExact||0)||a.lvl-b.lvl||(a.parts?1:0)-(b.parts?1:0)||a.people-b.people||(a.mismatch||0)-(b.mismatch||0)||a.sumAbs-b.sumAbs);
 }
 function moveHtml(m){ return `<li><span class="who">${esc(nameOf(m.from))} → ${esc(nameOf(m.to))}</span><span class="what">${m.items.map(it=>`${chip(it)} ${esc(fmtDate(it.t))} · ${hm(it.s)}–${hm(it.e)} · ${esc(itemText(it))}`).join(' + ')}</span></li>`; }
 function hClass(min){ const a=Math.abs(min); return a===0?'ok':(a<=150?'warn':'bad'); }
@@ -1081,7 +1086,7 @@ function solHtml(s){
     : ds.map(d=>`<div class="hrow"><span>${esc(nameOf(d.num))}</span><span class="v ${hClass(d.d)}">${d.d===0?'=':fmtH(d.d)}</span></div>`).join('');
   const split=s.moves.length===4 && s.moves[0].items[0].half && s.moves[2].items[0].parent===s.moves[0].items[0].parent;
   const u0=s.moves[0].items[0]; const cov=s.moves.find((m,k)=>k>0 && m.from===s.moves[0].to && m.to!==state.me.num && m.items.some(i=>i.di===u0.di) && !m.items.some(i=>s.moves[0].items.some(g=>g.id===i.id||(g.code===i.code&&g.di===i.di))));
-  const tags=[cov?`Cobertura: ${nameOf(cov.to)} faz o ${shortCode(cov.items[0])} de ${nameOf(cov.from)}, para ${nameOf(cov.from)} poder fazer o teu turno`:'',s.parts?'Bloco dividido por colegas diferentes':'',split?'MT dividido: um colega faz a M, outro a T':'',s.sameShift?'Mesmo tipo de turno':'',s.sameDay?'Mesmo tipo de dia':''].filter(Boolean);
+  const tags=[cov?`Cobertura: ${nameOf(cov.to)} faz o ${shortCode(cov.items[0])} de ${nameOf(cov.from)}, para ${nameOf(cov.from)} poder fazer o teu turno`:'',s.parts?'Bloco dividido por colegas diferentes':'',split?'MT dividido: um colega faz a M, outro a T':''].filter(Boolean);
   const owe=[]; for(const d of ds) if(d.d<0) owe.push(`${d.num===state.me.num?'Ficas':esc(nameOf(d.num))+' fica'} a dever ${fmtH(d.d).slice(1)} de trabalho`);
   for(const p of s.prevInfo){ const g=Object.values(p.give).reduce((a,b)=>a+b,0), rc=Object.values(p.recv).reduce((a,b)=>a+b,0);
     if(g>rc) owe.push(`${p.num===state.me.num?'Ficas':esc(nameOf(p.num))+' fica'} a dever ${fmtH(rc-g).slice(1)} de prevenção`);
