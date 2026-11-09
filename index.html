@@ -54,7 +54,14 @@ body{margin:0}
 body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.45;
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 120px}
 .wrap{max-width:640px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
-.ver{position:absolute;top:2px;right:0;font-size:.7rem;color:var(--muted);opacity:.7;font-variant-numeric:tabular-nums;letter-spacing:.02em}
+.hcorner{position:absolute;top:0;right:0;display:flex;align-items:center;gap:6px}
+.bell{position:relative;border:0;background:color-mix(in srgb,var(--ink) 12%,transparent);border-radius:999px;width:30px;height:30px;font-size:16px;line-height:30px;padding:0;cursor:pointer;animation:ring 1.2s ease-in-out 3}
+.bell::after{content:'';position:absolute;top:3px;right:3px;width:8px;height:8px;border-radius:50%;background:var(--bad);box-shadow:0 0 0 2px var(--bg)}
+@keyframes ring{0%,100%{transform:rotate(0)}20%{transform:rotate(14deg)}40%{transform:rotate(-12deg)}60%{transform:rotate(8deg)}80%{transform:rotate(-4deg)}}
+.updask{position:absolute;top:36px;right:0;z-index:40;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;max-width:280px;display:flex;flex-direction:column;gap:8px;font-size:.88rem;box-shadow:0 6px 20px rgba(0,0,0,.25)}
+.updask[hidden],.bell[hidden]{display:none}
+.toast button{margin-left:10px;border:0;border-radius:8px;padding:4px 10px;font:inherit;font-weight:700;cursor:pointer;background:var(--accent,#4cc3ad);color:#04211c}
+.ver{font-size:.7rem;color:var(--muted);opacity:.7;font-variant-numeric:tabular-nums;letter-spacing:.02em}
 header.top{position:relative;display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding-top:18px;flex-wrap:wrap}
 h1{font-family:var(--f-display);font-weight:700;font-size:2.1rem;letter-spacing:.01em;margin:0;line-height:1;text-wrap:balance}
 h1 span{color:var(--accent)}
@@ -171,7 +178,7 @@ input[type=search]{font:inherit;width:100%;padding:10px 12px;border-radius:10px;
 .hint{margin:0;padding:10px 12px;border-radius:10px;background:var(--accent-soft);border-left:4px solid var(--accent);color:var(--ink);font-weight:700;font-size:1rem;line-height:1.4}
 .q-title{font-size:1.05rem;font-weight:700;color:var(--ink);padding:6px 10px;border-radius:8px;background:var(--accent-soft);border-left:4px solid var(--accent)}
 .q-title.nogo-t{background:color-mix(in srgb,var(--bad) 14%,transparent);border-left-color:var(--bad)}
-.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(90px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 14px;border-radius:10px;font-size:.88rem;z-index:30;max-width:90vw}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(90px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 14px;border-radius:10px;font-size:.88rem;z-index:30;width:min(340px,90vw);box-sizing:border-box}
 .debt{display:flex;flex-direction:column;gap:2px;border-radius:8px;padding:8px 10px;font-size:.88rem}
 .debt.bad{background:color-mix(in srgb,var(--bad) 18%,transparent);border:1.5px solid var(--bad);color:var(--ink)}
 .debt.bad strong{color:var(--bad)}
@@ -196,7 +203,8 @@ details summary{cursor:pointer}
   <header class="top">
     <h1>Trocas <span>de Turno</span></h1>
     <span class="eyebrow">Cardiologia · ULSTS</span>
-    <span class="ver" id="app-ver" title="Versão da app">v35</span>
+    <span class="hcorner"><button type="button" class="bell" id="upd-bell" hidden aria-label="Há uma versão nova: toca para atualizar">🔔</button><span class="ver" id="app-ver" title="Versão da app">v36</span></span>
+    <div class="updask" id="upd-ask" hidden><span>Atualizar agora? Vais ter de carregar outra vez em «Procurar trocas».</span><span class="row"><button type="button" id="upd-yes" class="primary">Atualizar</button><button type="button" id="upd-no">Agora não</button></span></div>
   </header>
 
   <!-- 1. carregar -->
@@ -1176,7 +1184,18 @@ if('serviceWorker' in navigator){
   navigator.serviceWorker.addEventListener('controllerchange',()=>{ if(reloaded||!hadController) return; reloaded=true;
     // nova versão instalada: só recarrega se ainda não há horário carregado, para não perder o trabalho
     if(!window.__trocas || !window.__trocas.DATA) location.reload();
-    else { const t=document.createElement('div'); t.className='toast'; t.textContent='Há uma versão nova da app. Fecha e volta a abrir para a usar.'; document.body.appendChild(t); setTimeout(()=>t.remove(),8000); } });
+    else showUpdate(); });
+  // nova versão com trabalho em curso: aviso durante 12 s + campainha no canto até atualizar
+  function showUpdate(){
+    const bell=document.getElementById('upd-bell'), ask=document.getElementById('upd-ask');
+    const hasResults=()=>{ const r=document.getElementById('sec-res'); return r && !r.hidden && r.textContent.trim().length>0; };
+    const go=()=>location.reload(); // o horário e os turnos marcados ficam guardados e voltam sozinhos
+    const tap=()=>{ if(hasResults()) ask.hidden=!ask.hidden; else go(); };
+    bell.hidden=false; bell.onclick=tap;
+    document.getElementById('upd-yes').onclick=go; document.getElementById('upd-no').onclick=()=>{ ask.hidden=true; };
+    const t=document.createElement('div'); t.className='toast'; t.innerHTML='🔔 Há uma versão nova da app! Toca na campainha para atualizar.';
+    const b=document.createElement('button'); b.type='button'; b.textContent='Atualizar'; b.onclick=()=>{ t.remove(); tap(); }; t.appendChild(b);
+    document.body.appendChild(t); setTimeout(()=>t.remove(),12000); }
 }
 </script>
 </body>
