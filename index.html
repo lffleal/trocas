@@ -212,6 +212,7 @@ details summary{cursor:pointer}
       <span>O PDF é lido só neste dispositivo. Nada é enviado nem guardado fora dele.</span>
     </div>
     <div id="load-status" class="small" hidden></div>
+    <div id="net-note" class="small" style="color:var(--bad)" hidden>📡 Sem net, não consigo ver se há uma versão nova da app… mas não faz mal: podes continuar a usá-la à vontade! 😉</div>
   </section>
 
   <!-- como funciona (estado inicial) -->
@@ -738,7 +739,8 @@ function search(me, unitItems, nogo, budgetMs=3500){
   const t0=performance.now(); const sols=[]; const seen=new Set(); const gives=[];
   const unitHrs=presentialMin(unitItems);
   const others=DATA.people.filter(p=>p.num!==me.num);
-  const tradeCache=new Map(); const withHalves=unitItems.some(i=>i.half); // partes de turnos só entram quando estou a trocar uma parte
+  const tradeCache=new Map(); const withHalves=unitItems.some(i=>i.half) || (unitItems.length===1 && !unitItems[0].prev && !(unitItems[0].s<720 && unitItems[0].e>=1140));
+  // partes de turnos entram quando estou a trocar uma parte, ou um turno simples (M ou T): posso ser pago só com a M ou só com a T do MT de um colega
   const with6h=unitItems.some(i=>i.half==='pm'||i.half==='pt');
   const tr=p=>{ if(!tradeCache.has(p.num)) tradeCache.set(p.num,tradeables(p,withHalves,with6h)); return tradeCache.get(p.num); };
   const giveKinds=new Set(unitItems.map(i=>!!i.prev));
@@ -748,7 +750,7 @@ function search(me, unitItems, nogo, budgetMs=3500){
     const sc=scoreSolution(moves,evals); if(extraLvl&&extraLvl.l>sc.lvl){sc.lvl=extraLvl.l} if(extraLvl) sc.issues.push(...extraLvl.m);
     sols.push({moves,...sc});
   };
-  const eligNote=(l,p)=> l===4? {l:4,m:[`${p.name.split(' ')[0]} raramente faz este posto`]} : null;
+  const eligNote=(l,p)=> l===4? {l:4,m:[`${nameOf(p.num)} raramente faz este posto`]} : null;
   const mergeNotes=(...ns)=>{ const v=ns.filter(Boolean); if(!v.length) return null; return {l:Math.max(...v.map(x=>x.l)),m:v.flatMap(x=>x.m)}; };
   const within=()=>performance.now()-t0<budgetMs;
   const uS=Math.min(...unitItems.map(i=>i.abs)), uE=Math.max(...unitItems.map(i=>i.abe));
@@ -1158,12 +1160,16 @@ $('#sheet-close').addEventListener('click',closeSheet); $('#scrim').addEventList
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&!$('#sheet').hidden) closeSheet(); });
 $('#go').addEventListener('click',runSearch);
 
-window.addEventListener('unhandledrejection',e=>{const st=$('#load-status');st.hidden=false;st.innerHTML=`<span style="color:var(--bad)">Erro: ${esc(e.reason&&e.reason.message||e.reason)}</span>`});
+window.addEventListener('unhandledrejection',e=>{ const m=String(e.reason&&e.reason.message||e.reason||''); if(/ServiceWorker|sw\.js/i.test(m)) return;const st=$('#load-status');st.hidden=false;st.innerHTML=`<span style="color:var(--bad)">Erro: ${esc(e.reason&&e.reason.message||e.reason)}</span>`});
 window.__trocas={addSplitCombos,readPdf,buildModel,search,evaluate,get DATA(){return DATA},set TODAY(v){TODAY_IDX=v},state,handleFiles,choose};
 </script>
 <script>
 if('serviceWorker' in navigator){
-  window.addEventListener('load',()=>{ navigator.serviceWorker.register('sw.js').then(reg=>{ reg.update(); }).catch(()=>{}); });
+  window.addEventListener('load',()=>{ const netNote=on=>{ const n=document.getElementById('net-note'); if(n) n.hidden=!on; };
+    if(!navigator.onLine) netNote(true);
+    navigator.serviceWorker.register('sw.js').then(reg=>{ reg.update().then(()=>netNote(!navigator.onLine)).catch(()=>netNote(true)); }).catch(()=>netNote(!navigator.onLine));
+    window.addEventListener('offline',()=>netNote(true));
+    window.addEventListener('online',()=>navigator.serviceWorker.getRegistration().then(r=>r&&r.update()).then(()=>netNote(!navigator.onLine)).catch(()=>{})); });
   let reloaded=false; const hadController=!!navigator.serviceWorker.controller; // na 1.ª instalação não recarrega
   navigator.serviceWorker.addEventListener('controllerchange',()=>{ if(reloaded||!hadController) return; reloaded=true;
     // nova versão instalada: só recarrega se ainda não há horário carregado, para não perder o trabalho
