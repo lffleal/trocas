@@ -1,6 +1,6 @@
 // Trocas de Turno: funciona sem internet e atualiza-se sozinha.
 // Não guarda horários: só guarda os ficheiros da própria app.
-const VERSION = 'v36-2026-11-09';
+const VERSION = 'v37-2026-11-09';
 const CACHE = 'trocas-' + VERSION;
 const CORE = ['./', './index.html', './manifest.webmanifest', './pdf.min.mjs', './pdf.worker.min.mjs',
   './icon-192.png', './icon-512.png', './maskable-512.png', './apple-touch-icon.png'];
