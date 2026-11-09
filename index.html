@@ -270,7 +270,7 @@ const PDFJS_BASES = window.__PDFJS_BASE ? [window.__PDFJS_BASE] : ['./','https:/
 /* ======================= Regras do serviço ======================= */
 // identificadores codificados: cada pessoa é reconhecida por uma impressão digital do seu número
 const cyrb53=(str,seed=7)=>{let h1=0xdeadbeef^seed,h2=0x41c6ce57^seed;for(let i=0,ch;i<str.length;i++){ch=str.charCodeAt(i);h1=Math.imul(h1^ch,2654435761);h2=Math.imul(h2^ch,1597334677);}h1=Math.imul(h1^(h1>>>16),2246822507);h1^=Math.imul(h2^(h2>>>13),3266489909);h2=Math.imul(h2^(h2>>>16),2246822507);h2^=Math.imul(h1^(h1>>>13),3266489909);return 4294967296*(2097151&h2)+(h1>>>0);};
-const RULES={"v74wwutuqy":"r","101p8qclzyj":"b","1278qeeih7t":"a","135uttkqjs9":"r","137jv17a697":"ir","14ik80lk27a":"eu","15t80g8ygka":"b","18pw6hbz48x":"a","1a8l6l9jld6":"r","1akhrq1c69p":"c","1b8jgoqx1to":"b","1cwz47f5w8d":"eru","1ht6gip9wzv":"eu","1i0onv8mweh":"b","1obwmfh2ws8":"b","1roop9nady4":"ir","1t541s2cjsq":"cfr","1yl1pwyx682":"a","239v1y7kbfz":"eru","27u0o5z0ltn":"c","2824gwsrw1v":"ir","2831vl901mw":"cgntz","2bwwk9fcc2j":"ir","2d0kmrfasyx":"a","2mn28jdj1f":"fnrw","30s7zfxnf4":"x","4cguqb8k12":"a","58mf8duvfu":"hr","bpj7c9rx8b":"ir","jo22qnct9x":"crw","jvl3739zoc":"a","n3zhm0b8ji":"a","oxsghnc0lj":"b","rcwz5npcm1":"dr","rj2k07tsr7":"mr","uy00hqpp52":"i","xj1xmnq0kl":"br","y8nrski9a":"hr"};
+const RULES={"v74wwutuqy":"r","101p8qclzyj":"b","1278qeeih7t":"a","135uttkqjs9":"r","137jv17a697":"ir","14ik80lk27a":"eu","15t80g8ygka":"b","18pw6hbz48x":"a","1a8l6l9jld6":"r","1akhrq1c69p":"c","1b8jgoqx1to":"b","1cwz47f5w8d":"eru","1ht6gip9wzv":"eu","1i0onv8mweh":"b","1obwmfh2ws8":"b","1roop9nady4":"ir","1t541s2cjsq":"cfr","1yl1pwyx682":"a","239v1y7kbfz":"eru","27u0o5z0ltn":"c","2824gwsrw1v":"ir","2831vl901mw":"cgntz","2bwwk9fcc2j":"ir","2d0kmrfasyx":"a","2mn28jdj1f":"fnrw","30s7zfxnf4":"x","4cguqb8k12":"a","58mf8duvfu":"hnrkol","bpj7c9rx8b":"ir","jo22qnct9x":"crw","jvl3739zoc":"a","n3zhm0b8ji":"a","oxsghnc0lj":"b","rcwz5npcm1":"dr","rj2k07tsr7":"mr","uy00hqpp52":"i","xj1xmnq0kl":"br","y8nrski9a":"hr"};
 const _hc=new Map();
 const has=(num,c)=>{ let k=_hc.get(num); if(k===undefined){ k=cyrb53('tt|'+num).toString(36); _hc.set(num,k); } const v=RULES[k]; return !!v && v.includes(c); };
 const UCIC_GROUPS = new Set(['ENFER_UCIC','ENFEMC_UCI','ENF_UCIC','ENFESC_UCI']);
@@ -603,11 +603,14 @@ function evaluate(p, give, recv, nogo){
   const add=(l,m)=>{ if(!issues.includes(m)) issues.push(m); if(l>lvl) lvl=l; };
   const nd=DATA.dates.length;
   const who=nameOf(p.num);
+  if(has(p.num,'l') && !(state.me && state.me.num===p.num)) add(4,'Colega com restrições de horário: só em último caso');
   const lab=o=>`${shortCode(o)}${o.prev&&!o.half?' (prev.)':''} ${fmtDate(o.t)}`;
   for(const r of iv){ if(!r.recv) continue;
     if(r.di < TODAY_IDX) return null;
     if(has(p.num,'m') && !r.prev && r.s<720) return null;
     if(has(p.num,'n') && !r.prev && r.night) return null;
+    if(has(p.num,'k') && [0,6].includes(wday(DATA.dates[r.di]))) return null; // não trabalha ao fim de semana
+    if(has(p.num,'o') && !(r.s>=Math.min(...p.base.filter(b=>!b.prev).map(b=>b.s)) && r.e<=Math.max(...p.base.filter(b=>!b.prev).map(b=>b.e)))) return null; // só turnos dentro do horário que costuma fazer (ex.: entre as 09:00 e as 20:30)
     if(has(p.num,'t') && !r.prev && !r.night){
       const day=iv.filter(o=>!o.prev&&!o.night&&o.di===r.di);
       if(day.some(o=>o.s<720) && day.some(o=>o.e>=1140)) return null; }

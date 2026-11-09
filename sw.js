@@ -1,6 +1,6 @@
 // Trocas de Turno: funciona sem internet e atualiza-se sozinha.
 // Não guarda horários: só guarda os ficheiros da própria app.
-const VERSION = 'v30-2026-11-06';
+const VERSION = 'v32-2026-11-07';
 const CACHE = 'trocas-' + VERSION;
 const CORE = ['./', './index.html', './manifest.webmanifest', './pdf.min.mjs', './pdf.worker.min.mjs',
   './icon-192.png', './icon-512.png', './maskable-512.png', './apple-touch-icon.png'];
@@ -19,13 +19,16 @@ self.addEventListener('fetch', e => {
   const isPage = req.mode === 'navigate' || url.pathname.endsWith('/') || url.pathname.endsWith('.html');
   if (isPage) {
     // página: tenta sempre a versão mais recente; sem rede, usa a guardada
-    e.respondWith(fetch(req).then(r => { const cp = r.clone(); caches.open(CACHE).then(c => c.put('./index.html', cp)); return r; })
-      .catch(() => caches.match('./index.html')));
+    // com rede fraca não fica à espera: ao fim de 3 s abre a versão guardada (e a nova fica guardada para a próxima vez)
+    const cached = () => caches.match('./index.html', {ignoreSearch: true}).then(h => h || caches.match('./', {ignoreSearch: true}));
+    const net = fetch(req).then(r => { if (r && r.ok) { const cp = r.clone(); caches.open(CACHE).then(c => c.put('./index.html', cp)); } return r; });
+    const timeout = new Promise(res => setTimeout(res, 3000)).then(cached);
+    e.respondWith(Promise.race([net.catch(cached), timeout.then(h => h || net)]).then(r => r || cached()));
     return;
   }
   // restantes ficheiros (app e tipos de letra): rápido a partir da cache, renovado em segundo plano
-  e.respondWith(caches.match(req).then(hit => {
-    const net = fetch(req).then(r => { if (r && (r.ok || r.type === 'opaque')) { const cp = r.clone(); caches.open(CACHE).then(c => c.put(req, cp)); } return r; }).catch(() => hit);
+  e.respondWith(caches.match(req, {ignoreSearch: url.origin === location.origin}).then(hit => {
+    const net = fetch(req).then(r => { if (r && (r.ok || r.type === 'opaque')) { const cp = r.clone(); caches.open(CACHE).then(c => c.put(req, cp)); } return r; }).catch(() => hit || new Response('', {status: 504}));
     return hit || net;
   }));
 });
