@@ -179,6 +179,11 @@ input[type=search]{font:inherit;width:100%;padding:10px 12px;border-radius:10px;
 .hint{margin:0;padding:10px 12px;border-radius:10px;background:var(--accent-soft);border-left:4px solid var(--accent);color:var(--ink);font-weight:700;font-size:1rem;line-height:1.4}
 .q-title{font-size:1.05rem;font-weight:700;color:var(--ink);padding:6px 10px;border-radius:8px;background:var(--accent-soft);border-left:4px solid var(--accent)}
 .q-title.nogo-t{background:color-mix(in srgb,var(--bad) 14%,transparent);border-left-color:var(--bad)}
+.exclbox{border:1px dashed var(--line);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.exclbox[hidden]{display:none}
+.xchips{display:flex;flex-wrap:wrap;gap:6px}
+.xchip{padding:5px 10px;border-radius:999px;font-size:.85rem;line-height:1.2}
+.xchip.off{border-color:var(--bad);color:var(--bad);text-decoration:line-through;opacity:.85}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(90px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 14px;border-radius:10px;font-size:.88rem;z-index:30;width:min(340px,90vw);box-sizing:border-box}
 .debt{display:flex;flex-direction:column;gap:2px;border-radius:8px;padding:8px 10px;font-size:.88rem}
 .debt.bad{background:color-mix(in srgb,var(--bad) 18%,transparent);border:1.5px solid var(--bad);color:var(--ink)}
@@ -204,7 +209,7 @@ details summary{cursor:pointer}
   <header class="top">
     <h1>Trocas <span>de Turno</span></h1>
     <span class="eyebrow">Cardiologia · ULSTS</span>
-    <span class="hcorner"><button type="button" class="bell" id="upd-bell" aria-label="Verificar atualizações">🔔</button><span class="ver" id="app-ver" title="Versão da app">v39</span></span>
+    <span class="hcorner"><button type="button" class="bell" id="upd-bell" aria-label="Verificar atualizações">🔔</button><span class="ver" id="app-ver" title="Versão da app">v43</span></span>
     <div class="updask" id="upd-ask" hidden><span>Atualizar agora? Vais ter de carregar outra vez em «Procurar trocas».</span><span class="row"><button type="button" id="upd-yes" class="primary">Atualizar</button><button type="button" id="upd-no">Agora não</button></span></div>
   </header>
 
@@ -282,7 +287,7 @@ const PDFJS_BASES = window.__PDFJS_BASE ? [window.__PDFJS_BASE] : ['./','https:/
 /* ======================= Regras do serviço ======================= */
 // identificadores codificados: cada pessoa é reconhecida por uma impressão digital do seu número
 const cyrb53=(str,seed=7)=>{let h1=0xdeadbeef^seed,h2=0x41c6ce57^seed;for(let i=0,ch;i<str.length;i++){ch=str.charCodeAt(i);h1=Math.imul(h1^ch,2654435761);h2=Math.imul(h2^ch,1597334677);}h1=Math.imul(h1^(h1>>>16),2246822507);h1^=Math.imul(h2^(h2>>>13),3266489909);h2=Math.imul(h2^(h2>>>16),2246822507);h2^=Math.imul(h1^(h1>>>13),3266489909);return 4294967296*(2097151&h2)+(h1>>>0);};
-const RULES={"v74wwutuqy":"r","101p8qclzyj":"b","1278qeeih7t":"a","135uttkqjs9":"r","137jv17a697":"ir","14ik80lk27a":"eu","15t80g8ygka":"b","18pw6hbz48x":"a","1a8l6l9jld6":"r","1akhrq1c69p":"c","1b8jgoqx1to":"b","1cwz47f5w8d":"eru","1ht6gip9wzv":"eu","1i0onv8mweh":"b","1obwmfh2ws8":"b","1roop9nady4":"ir","1t541s2cjsq":"cfr","1yl1pwyx682":"a","239v1y7kbfz":"eru","27u0o5z0ltn":"c","2824gwsrw1v":"ir","2831vl901mw":"cgntz","2bwwk9fcc2j":"ir","2d0kmrfasyx":"a","2mn28jdj1f":"fnrw","30s7zfxnf4":"x","4cguqb8k12":"a","58mf8duvfu":"hnrkol","bpj7c9rx8b":"ir","jo22qnct9x":"crw","jvl3739zoc":"a","n3zhm0b8ji":"a","oxsghnc0lj":"b","rcwz5npcm1":"dr","rj2k07tsr7":"mr","uy00hqpp52":"i","xj1xmnq0kl":"br","y8nrski9a":"hr"};
+const RULES={"12cmpysi5ym":"r","v74wwutuqy":"r","101p8qclzyj":"b","1278qeeih7t":"a","135uttkqjs9":"r","137jv17a697":"ir","14ik80lk27a":"eu","15t80g8ygka":"b","18pw6hbz48x":"a","1a8l6l9jld6":"r","1akhrq1c69p":"cq","1b8jgoqx1to":"b","1cwz47f5w8d":"eru","1ht6gip9wzv":"eu","1i0onv8mweh":"b","1obwmfh2ws8":"b","1roop9nady4":"ir","1t541s2cjsq":"cfr","1yl1pwyx682":"a","239v1y7kbfz":"eru","27u0o5z0ltn":"c","2824gwsrw1v":"ir","2831vl901mw":"cgntz","2bwwk9fcc2j":"ir","2d0kmrfasyx":"a","2mn28jdj1f":"fnrw","30s7zfxnf4":"x","4cguqb8k12":"a","58mf8duvfu":"hnrkol","bpj7c9rx8b":"ir","jo22qnct9x":"crw","jvl3739zoc":"a","n3zhm0b8ji":"a","oxsghnc0lj":"b","rcwz5npcm1":"dr","rj2k07tsr7":"mr","uy00hqpp52":"i","xj1xmnq0kl":"br","y8nrski9a":"hr"};
 const _hc=new Map();
 const has=(num,c)=>{ let k=_hc.get(num); if(k===undefined){ k=cyrb53('tt|'+num).toString(36); _hc.set(num,k); } const v=RULES[k]; return !!v && v.includes(c); };
 const UCIC_GROUPS = new Set(['ENFER_UCIC','ENFEMC_UCI','ENF_UCIC','ENFESC_UCI']);
@@ -621,6 +626,7 @@ function evaluate(p, give, recv, nogo){
     if(r.di < TODAY_IDX) return null;
     if(has(p.num,'m') && !r.prev && r.s<720) return null;
     if(has(p.num,'n') && !r.prev && r.night) return null;
+    if(has(p.num,'q') && !r.prev && (r.night || r.e>930)) return null; // só faz manhãs
     if(has(p.num,'k') && [0,6].includes(wday(DATA.dates[r.di]))) return null; // não trabalha ao fim de semana
     if(has(p.num,'o') && !(r.s>=Math.min(...p.base.filter(b=>!b.prev).map(b=>b.s)) && r.e<=Math.max(...p.base.filter(b=>!b.prev).map(b=>b.e)))) return null; // só turnos dentro do horário que costuma fazer (ex.: entre as 09:00 e as 20:30)
     if(has(p.num,'t') && !r.prev && !r.night){
@@ -827,7 +833,11 @@ function search(me, unitItems, nogo, budgetMs=3500){
     const easyB=a=>a==='UCIC'||a==='INT';
     const cands=[]; for(const {p,l} of others.map(p=>({p,l:eligUnit(unitItems,p)})).filter(x=>x.l)){
       const bl=p.base.filter(b=>!b.prev && b.di===U.di && b.abs<U.abe && U.abs<b.abe);
-      if(bl.length===1 && !bl[0].fixed) cands.push({p,l,B:bl[0]}); }
+      if(bl.length!==1 || bl[0].fixed) continue;
+      // se o colega está de MT e o meu turno só choca com uma das partes (M ou T), basta cobrir essa parte
+      let B=bl[0]; const ov=h=>Math.min(h.abe,U.abe)-Math.max(h.abs,U.abs);
+      const parts=splitPrev(B).filter(h=>!h.prev); if(parts.length===2){ const hit=parts.filter(h=>ov(h)>30); if(hit.length===1) B=hit[0]; }
+      cands.push({p,l,B}); }
     cands.sort((a,b)=>easyB(b.B.area)-easyB(a.B.area));
     outerC: for(const {p:Q1,l:l1,B} of cands){
       const covN=null; // o posto que fica livre é sempre assegurado por quem cobre (habilitado)
@@ -837,12 +847,13 @@ function search(me, unitItems, nogo, budgetMs=3500){
         if(!evaluate(Q2,[],[B])) continue;
         const pays=tr(Q2).filter(x=>!x.half && Math.abs(x.hours-B.hours)<=150);
         // a) quem cobre paga-me diretamente
+        let aFound=false;
         for(const X of pays){ if(!kindU(X)||backToMe(X)||!eligible(X.area,me)) continue; const em=evaluate(me,unitItems,[X],nogo); if(!em) continue;
           const e1=evaluate(Q1,[B],[U]); if(!e1) continue; const e2=evaluate(Q2,[X],[B]); if(!e2) continue;
-          push([{from:me.num,to:Q1.num,items:[U]},{from:Q1.num,to:Q2.num,items:[B]},{from:Q2.num,to:me.num,items:[X]}],[em,e1,e2],mergeNotes(eligNote(l1,Q1),eligNote(l2,Q2),covN)); }
-        // b) pago ao colega habilitado e ele paga a quem o cobre
-        for(const X1 of backs){ const em=evaluate(me,unitItems,[X1],nogo); if(!em) continue;
-          for(const X2 of pays){ if(X2.prev||X2.id===X1.id||!eligible(X2.area,Q1)) continue;
+          aFound=true; push([{from:me.num,to:Q1.num,items:[U]},{from:Q1.num,to:Q2.num,items:[B]},{from:Q2.num,to:me.num,items:[X]}],[em,e1,e2],mergeNotes(eligNote(l1,Q1),eligNote(l2,Q2),covN)); }
+        // b) pago ao colega habilitado e ele paga a quem o cobre — só se a) não resolver, e cada troca com horas iguais (sem ninguém dar mais do que recebe)
+        if(!aFound) for(const X1 of backs){ if(Math.abs(X1.hours-U.hours)>30) continue; const em=evaluate(me,unitItems,[X1],nogo); if(!em) continue;
+          for(const X2 of pays){ if(X2.prev||X2.id===X1.id||!eligible(X2.area,Q1)||Math.abs(X2.hours-B.hours)>30) continue;
             const e1=evaluate(Q1,[B,X1],[U,X2]); if(!e1) continue; const e2=evaluate(Q2,[X2],[B]); if(!e2) continue;
             push([{from:me.num,to:Q1.num,items:[U]},{from:Q1.num,to:me.num,items:[X1]},{from:Q1.num,to:Q2.num,items:[B]},{from:Q2.num,to:Q1.num,items:[X2]}],[em,e1,e2],mergeNotes(eligNote(l1,Q1),eligNote(l2,Q2),covN));
             if(!okT()) break outerC; } }
@@ -888,6 +899,17 @@ function search(me, unitItems, nogo, budgetMs=3500){
     }
   }
   // dar o turno sem receber outro no mês: proposto na mesma, com aviso claro
+  // duas trocas separadas: um colega livre faz o meu turno (perde uma folga) e eu faço um turno (ou a M/T do MT) de outro colega
+  // (que não ganha folga de volta). Eu fico com as horas certas; os dois colegas ficam com horas por acertar entre si.
+  if(unitItems.length===1 && !unitItems[0].prev && within()){
+    const U=unitItems[0]; const As=gives.slice().sort((a,b)=>Math.max(a.ev.lvl,a.el)-Math.max(b.ev.lvl,b.el)).slice(0,8);
+    const Bs=[]; for(const B of others){ for(const X of tr(B)){ if(X.prev||backToMe(X)||!eligible(X.area,me)||Math.abs(X.hours-U.hours)>60) continue;
+        const em=evaluate(me,unitItems,[X],nogo); if(!em) continue; const eb=evaluate(B,[X],[]); if(!eb) continue; Bs.push({B,X,em,eb}); } }
+    Bs.sort((a,b)=>Math.max(a.em.lvl,a.eb.lvl)-Math.max(b.em.lvl,b.eb.lvl)); 
+    for(const A of As) for(const y of Bs.slice(0,12)){ if(y.B===A.p) continue;
+      push([{from:me.num,to:A.p.num,items:[U]},{from:y.B.num,to:me.num,items:[y.X]}],[A.ev,y.em,y.eb],
+        mergeNotes({l:3,m:[`${nameOf(A.p.num)} faz o teu turno sem receber nada em troca e tu fazes o ${shortCode(y.X)} de ${nameOf(y.B.num)}: as horas ficam por acertar entre os dois`]},eligNote(A.el,A.p)));
+      if(!within()) break; } }
   gives.sort((a,b)=>Math.max(a.ev.lvl,a.el)-Math.max(b.ev.lvl,b.el));
   for(const g of gives.slice(0,15)) push([{from:me.num,to:g.p.num,items:unitItems}],[g.ev],mergeNotes({l:3,m:['Sem turno de volta neste horário: as horas ficam por acertar no mês seguinte']},eligNote(g.el,g.p)));
   const nItems=x=>x.moves.reduce((n,m)=>n+m.items.length,0);
@@ -967,7 +989,7 @@ function renderPeople(q){
   $('#people').innerHTML=quick+[...groups].map(([g,ps])=>`<div class="grp"><div class="eyebrow">${esc(g)}</div>${ps.map(p=>`<button data-num="${p.num}" class="${state.me&&state.me.num===p.num?'sel':''}"><span>${esc(shortName(p))} <span class="muted small">${esc(p.name)}</span></span><span class="num">${p.num}</span></button>`).join('')}</div>`).join('')||'<p class="muted">Ninguém com esse nome.</p>';
 }
 function choose(num){
-  state.me=DATA.byNum.get(num); state.free=new Map(); state.nogo=new Map(); store.set('trocas.me',num);
+  state.me=DATA.byNum.get(num); state.free=new Map(); state.nogo=new Map(); excl.clear(); store.set('trocas.me',num);
   $('#sec-who').hidden=true; $('#sec-cal').hidden=false; $('#bar').hidden=false; $('#sec-res').hidden=true;
   $('#cal-title').textContent=`Horário de ${shortName(state.me)}`; saveMarks();
   renderCal(); updateBar(); $('#sec-cal').scrollIntoView({block:'start'});
@@ -1070,11 +1092,12 @@ function runSearch(){
     const units=[]; for(const [di,ids] of [...state.free].sort((a,b)=>a[0]-b[0])){
       const its=[...ids].map(id=>findItem(me,id)).filter(Boolean).sort((a,b)=>a.abs-b.abs);
       units.push(its); } // bloco do dia (ex.: MT9 + TN11); se não houver bom bloco, junta-se a divisão por colegas
-    res.innerHTML=units.map((u,i)=>`<div class="unit" id="unit-${i}"><div class="unit-h"><h3>${fmtDate(u[0].t)}</h3>${u.map(chip).join('')}<span class="small muted">${esc(u.map(itemText).join(' + '))}</span></div><p class="row muted small"><span class="spinner"></span> A procurar…</p></div>`).join('');
+    allRes.length=0; unitRedraws.length=0;
+    res.innerHTML=`<div class="exclbox" id="excl-box" hidden></div>`+units.map((u,i)=>`<div class="unit" id="unit-${i}"><div class="unit-h"><h3>${fmtDate(u[0].t)}</h3>${u.map(chip).join('')}<span class="small muted">${esc(u.map(itemText).join(' + '))}</span></div><p class="row muted small"><span class="spinner"></span> A procurar…</p></div>`).join('');
     let i=0; const next=()=>{ if(i>=units.length) return; const u=units[i];
       try{ const r=search(me,u,state.nogo);
         if(u.length>1) addSplitCombos(me,u,r,state.nogo);
-        renderUnit(i,u,r); }
+        renderUnit(i,u,r); allRes.push(r); renderExcl(); }
       catch(err){ console.error(err); const el=$(`#unit-${i}`); if(el) el.innerHTML=`<div class="unit-h"><h3>${fmtDate(u[0].t)}</h3>${u.map(chip).join('')}</div><div class="debt bad"><strong>Não consegui procurar trocas para este turno</strong><span>Ocorreu um erro (${esc(err&&err.message||err)}). Tira uma fotografia a este ecrã e envia-a para corrigir.</span></div>`; }
       i++; setTimeout(next,10); }; next();
   },30);
@@ -1130,7 +1153,22 @@ function solHtml(s){
 }
 function prevTxt(o){ const ks=Object.keys(o); if(!ks.length) return 'nada'; const tot=ks.reduce((a,k)=>a+o[k],0);
   return `${fmtH(tot).slice(1)} (${ks.map(k=>PREV_TYPE_LABEL[k]||k).join(' + ')})`; }
-function renderUnit(i,u,r){
+// colegas que já disseram que não: tirados das propostas (só nesta sessão)
+const excl=new Set(), allRes=[], unitRedraws=[];
+function renderExcl(){
+  const box=document.getElementById('excl-box'); if(!box) return;
+  const cnt=new Map(); for(const r of allRes) for(const s of r.sols) for(const n of new Set(s.moves.flatMap(m=>[m.from,m.to]))) if(n!==state.me.num) cnt.set(n,(cnt.get(n)||0)+1);
+  for(const n of excl) if(!cnt.has(n)) cnt.set(n,0);
+  if(!cnt.size){ box.hidden=true; return; }
+  const list=[...cnt.keys()].sort((a,b)=>(excl.has(b)-excl.has(a))||nameOf(a).localeCompare(nameOf(b),'pt'));
+  box.hidden=false;
+  box.innerHTML=`<div class="grp-h"><h4>Quem já disse que não?</h4>${excl.size?`<button type="button" class="more" id="excl-clear">Repor todos</button>`:''}</div>
+    <p class="small muted" style="margin:0">Toca no nome de quem já te disse que não: as propostas com essa pessoa desaparecem. Toca outra vez para voltar a mostrar.</p>
+    <div class="xchips">${list.map(n=>`<button type="button" class="xchip${excl.has(n)?' off':''}" data-x="${n}">${excl.has(n)?'✕ ':''}${esc(nameOf(n))}</button>`).join('')}</div>`;
+  box.querySelectorAll('[data-x]').forEach(b=>b.onclick=()=>{ const n=b.dataset.x; excl.has(n)?excl.delete(n):excl.add(n); unitRedraws.forEach(f=>f()); renderExcl(); });
+  const c=document.getElementById('excl-clear'); if(c) c.onclick=()=>{ excl.clear(); unitRedraws.forEach(f=>f()); renderExcl(); };
+}
+function renderUnit(i,u,r0){
   const el=$(`#unit-${i}`); const PAGE=10;
   const shown={a:PAGE,b:PAGE,c:5,e:3};
   const names={1:['ideal','ideais'],2:['aceitável','aceitáveis'],3:['pouco desejável','pouco desejáveis'],4:['de último recurso','de último recurso'],5:['com autorização da chefia','com autorização da chefia']};
@@ -1142,7 +1180,7 @@ function renderUnit(i,u,r){
     if(list.length>shown[key]) h+=`<button class="more" data-more="${key}">Ver mais ${Math.min(PAGE,list.length-shown[key])}</button>`;
     return h;
   };
-  const draw=()=>{
+  const draw=()=>{ const r={...r0, sols:r0.sols.filter(s=>!s.moves.some(m=>excl.has(m.from)||excl.has(m.to)))};
     let h=`<div class="unit-h"><h3>${fmtDate(u[0].t)}</h3>${u.map(chip).join('')}<span class="small muted">${esc(u.map(itemText).join(' + '))}</span></div>`;
     if(!r.sols.length) h+='<p class="muted" style="margin:0">Não encontrei trocas que cumpram as regras.</p>';
     else {
@@ -1157,7 +1195,7 @@ function renderUnit(i,u,r){
     el.innerHTML=h;
     el.querySelectorAll('[data-more]').forEach(b=>b.onclick=()=>{shown[b.dataset.more]+=PAGE;draw()});
   };
-  draw();
+  unitRedraws.push(draw); draw();
 }
 
 
