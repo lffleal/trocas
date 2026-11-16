@@ -183,6 +183,11 @@ input[type=search]{font:inherit;width:100%;padding:10px 12px;border-radius:10px;
 .exclbox[hidden]{display:none}
 .xchips{display:flex;flex-wrap:wrap;gap:6px}
 .xchip{padding:5px 10px;border-radius:999px;font-size:.85rem;line-height:1.2}
+button.nm{all:unset;cursor:pointer;font-weight:inherit;border-bottom:1.5px dotted currentColor}
+button.nm:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.nmpop{z-index:50;min-width:220px;max-width:300px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:8px;font-size:.9rem;box-shadow:0 6px 20px rgba(0,0,0,.3)}
+.nmpop button{text-align:left}
+.xchip.ans{border-color:var(--bad);color:var(--ink);text-align:left}
 .xchip.off{border-color:var(--bad);color:var(--bad);text-decoration:line-through;opacity:.85}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(90px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 14px;border-radius:10px;font-size:.88rem;z-index:30;width:min(340px,90vw);box-sizing:border-box}
 .debt{display:flex;flex-direction:column;gap:2px;border-radius:8px;padding:8px 10px;font-size:.88rem}
@@ -209,7 +214,7 @@ details summary{cursor:pointer}
   <header class="top">
     <h1>Trocas <span>de Turno</span></h1>
     <span class="eyebrow">Cardiologia · ULSTS</span>
-    <span class="hcorner"><button type="button" class="bell" id="upd-bell" aria-label="Verificar atualizações">🔔</button><span class="ver" id="app-ver" title="Versão da app">v43</span></span>
+    <span class="hcorner"><button type="button" class="bell" id="upd-bell" aria-label="Verificar atualizações">🔔</button><span class="ver" id="app-ver" title="Versão da app">v44</span></span>
     <div class="updask" id="upd-ask" hidden><span>Atualizar agora? Vais ter de carregar outra vez em «Procurar trocas».</span><span class="row"><button type="button" id="upd-yes" class="primary">Atualizar</button><button type="button" id="upd-no">Agora não</button></span></div>
   </header>
 
@@ -989,7 +994,7 @@ function renderPeople(q){
   $('#people').innerHTML=quick+[...groups].map(([g,ps])=>`<div class="grp"><div class="eyebrow">${esc(g)}</div>${ps.map(p=>`<button data-num="${p.num}" class="${state.me&&state.me.num===p.num?'sel':''}"><span>${esc(shortName(p))} <span class="muted small">${esc(p.name)}</span></span><span class="num">${p.num}</span></button>`).join('')}</div>`).join('')||'<p class="muted">Ninguém com esse nome.</p>';
 }
 function choose(num){
-  state.me=DATA.byNum.get(num); state.free=new Map(); state.nogo=new Map(); excl.clear(); store.set('trocas.me',num);
+  state.me=DATA.byNum.get(num); state.free=new Map(); state.nogo=new Map(); excl.clear(); exDay.clear(); store.set('trocas.me',num);
   $('#sec-who').hidden=true; $('#sec-cal').hidden=false; $('#bar').hidden=false; $('#sec-res').hidden=true;
   $('#cal-title').textContent=`Horário de ${shortName(state.me)}`; saveMarks();
   renderCal(); updateBar(); $('#sec-cal').scrollIntoView({block:'start'});
@@ -1126,7 +1131,9 @@ function addSplitCombos(me,u,r,nogo){
   // dentro de cada grupo: primeiro o nível; em empate, o bloco inteiro antes da divisão por colegas
   r.sols.sort((a,b)=>Math.floor(a.tier)-Math.floor(b.tier)||((a.tier<2&&a.dayDiff)?1:0)-((b.tier<2&&b.dayDiff)?1:0)||(a.wkExact||0)-(b.wkExact||0)||a.lvl-b.lvl||(a.parts?1:0)-(b.parts?1:0)||a.people-b.people||(a.mismatch||0)-(b.mismatch||0)||a.sumAbs-b.sumAbs);
 }
-function moveHtml(m){ return `<li><span class="who">${esc(nameOf(m.from))} → ${esc(nameOf(m.to))}</span><span class="what">${m.items.map(it=>`${chip(it)} ${esc(fmtDate(it.t))} · ${hm(it.s)}–${hm(it.e)} · ${esc(itemText(it))}`).join(' + ')}</span></li>`; }
+function moveHtml(m,s){ const nb=n=>{ if(n===state.me.num) return esc(nameOf(n)); const days=s?[...new Set(s.moves.filter(x=>x.to===n).flatMap(x=>x.items.map(i=>i.di)))]:[];
+    return `<button type="button" class="nm" data-p="${n}" data-days="${days.join(',')}">${esc(nameOf(n))}</button>`; };
+  return `<li><span class="who">${nb(m.from)} → ${nb(m.to)}</span><span class="what">${m.items.map(it=>`${chip(it)} ${esc(fmtDate(it.t))} · ${hm(it.s)}–${hm(it.e)} · ${esc(itemText(it))}`).join(' + ')}</span></li>`; }
 function hClass(min){ const a=Math.abs(min); return a===0?'ok':(a<=150?'warn':'bad'); }
 function solHtml(s){
   const ds=s.deltas;
@@ -1144,8 +1151,8 @@ function solHtml(s){
   const prev = s.prevInfo.length ? `<div class="hours"><strong>Prevenção:</strong><div class="hlist">${s.prevInfo.map(p=>`<div class="hrow"><span><b>${esc(nameOf(p.num))}</b> dá ${prevTxt(p.give)}, recebe ${prevTxt(p.recv)}</span><span class="v ${p.unbal?'bad':'ok'}">${p.unbal?'fica a acertar':'certo'}</span></div>`).join('')}</div></div>` : '';
   return `<article class="sol" data-l="${s.lvl}"><div class="row spread"><span class="lvl">${LVL_LABEL[s.lvl]}</span><span class="small muted">${s.people} pessoas</span></div>
     ${tags.length?`<div class="row" style="gap:6px">${tags.map(t=>`<span class="tag">✓ ${t}</span>`).join('')}</div>`:''}
-    ${s.parts ? (()=>{ let k=0; return s.parts.map(pt=>{ const ms=s.moves.slice(k,k+pt.n); k+=pt.n; return `<div class="part"><div class="part-h">${chip(pt.item)} ${esc(pt.item.prev?'Prevenção':(AREA_LABEL[pt.item.area]||''))}</div><ul class="moves">${ms.map(moveHtml).join('')}</ul></div>`; }).join(''); })()
-      : `<ul class="moves">${s.moves.map(moveHtml).join('')}</ul>`}
+    ${s.parts ? (()=>{ let k=0; return s.parts.map(pt=>{ const ms=s.moves.slice(k,k+pt.n); k+=pt.n; return `<div class="part"><div class="part-h">${chip(pt.item)} ${esc(pt.item.prev?'Prevenção':(AREA_LABEL[pt.item.area]||''))}</div><ul class="moves">${ms.map(m=>moveHtml(m,s)).join('')}</ul></div>`; }).join(''); })()
+      : `<ul class="moves">${s.moves.map(m=>moveHtml(m,s)).join('')}</ul>`}
     ${debt}
     ${s.issues.length?`<ul class="issues">${s.issues.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}
     <div class="hours"><strong>Horas de trabalho no mês:</strong>${ds.every(d=>d.d===0)?' '+hrs:`<div class="hlist">${hrs}</div>`}</div>
@@ -1153,21 +1160,35 @@ function solHtml(s){
 }
 function prevTxt(o){ const ks=Object.keys(o); if(!ks.length) return 'nada'; const tot=ks.reduce((a,k)=>a+o[k],0);
   return `${fmtH(tot).slice(1)} (${ks.map(k=>PREV_TYPE_LABEL[k]||k).join(' + ')})`; }
-// colegas que já disseram que não: tirados das propostas (só nesta sessão)
-const excl=new Set(), allRes=[], unitRedraws=[];
+// respostas dos colegas (só nesta sessão): "não quer trocar" (tira a pessoa de tudo) ou "não pode no dia X" (tira só as propostas em que trabalharia nesse dia)
+const excl=new Set(), exDay=new Set(), allRes=[], unitRedraws=[];
+const hidden=s=>s.moves.some(m=>excl.has(m.from)||excl.has(m.to)||m.items.some(i=>exDay.has(m.to+'|'+i.di)));
+const redrawAll=()=>{ unitRedraws.forEach(f=>f()); renderExcl(); };
 function renderExcl(){
-  const box=document.getElementById('excl-box'); if(!box) return;
-  const cnt=new Map(); for(const r of allRes) for(const s of r.sols) for(const n of new Set(s.moves.flatMap(m=>[m.from,m.to]))) if(n!==state.me.num) cnt.set(n,(cnt.get(n)||0)+1);
-  for(const n of excl) if(!cnt.has(n)) cnt.set(n,0);
-  if(!cnt.size){ box.hidden=true; return; }
-  const list=[...cnt.keys()].sort((a,b)=>(excl.has(b)-excl.has(a))||nameOf(a).localeCompare(nameOf(b),'pt'));
-  box.hidden=false;
-  box.innerHTML=`<div class="grp-h"><h4>Quem já disse que não?</h4>${excl.size?`<button type="button" class="more" id="excl-clear">Repor todos</button>`:''}</div>
-    <p class="small muted" style="margin:0">Toca no nome de quem já te disse que não: as propostas com essa pessoa desaparecem. Toca outra vez para voltar a mostrar.</p>
-    <div class="xchips">${list.map(n=>`<button type="button" class="xchip${excl.has(n)?' off':''}" data-x="${n}">${excl.has(n)?'✕ ':''}${esc(nameOf(n))}</button>`).join('')}</div>`;
-  box.querySelectorAll('[data-x]').forEach(b=>b.onclick=()=>{ const n=b.dataset.x; excl.has(n)?excl.delete(n):excl.add(n); unitRedraws.forEach(f=>f()); renderExcl(); });
-  const c=document.getElementById('excl-clear'); if(c) c.onclick=()=>{ excl.clear(); unitRedraws.forEach(f=>f()); renderExcl(); };
+  const box=document.getElementById('excl-box'); if(!box) return; box.hidden=false;
+  const marks=[...[...excl].map(n=>({k:'p|'+n,t:`${nameOf(n)} — não quer trocar`})),
+    ...[...exDay].map(x=>{ const [n,d]=x.split('|'); return {k:'d|'+x,t:`${nameOf(n)} — não pode ${fmtDate(DATA.dates[+d])}`}; })];
+  box.innerHTML=`<div class="grp-h"><h4>Respostas dos colegas</h4>${marks.length?`<button type="button" class="more" id="excl-clear">Repor todos</button>`:''}</div>
+    <p class="small muted" style="margin:0">Toca no nome de um colega numa proposta para dizer que ele não pode nesse dia ou que não quer trocar.${marks.length?' Toca numa resposta abaixo para a desfazer.':''}</p>
+    ${marks.length?`<div class="xchips">${marks.map(m=>`<button type="button" class="xchip ans" data-k="${esc(m.k)}">✕ ${esc(m.t)}</button>`).join('')}</div>`:''}`;
+  box.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{ const k=b.dataset.k; if(k.startsWith('p|')) excl.delete(k.slice(2)); else exDay.delete(k.slice(2)); redrawAll(); });
+  const c=document.getElementById('excl-clear'); if(c) c.onclick=()=>{ excl.clear(); exDay.clear(); redrawAll(); };
 }
+function nmPop(btn){
+  let pop=document.getElementById('nm-pop'); if(pop) pop.remove();
+  const n=btn.dataset.p, days=(btn.dataset.days||'').split(',').filter(Boolean).map(Number);
+  pop=document.createElement('div'); pop.id='nm-pop'; pop.className='updask nmpop';
+  pop.innerHTML=`<strong>${esc(nameOf(n))}</strong>${days.map(d=>`<button type="button" data-a="d" data-d="${d}">Não pode ${esc(fmtDate(DATA.dates[d]))}</button>`).join('')}
+    <button type="button" data-a="p">Não quer trocar (tirar de todas)</button><button type="button" data-a="x" class="ghost">Cancelar</button>`;
+  document.body.appendChild(pop);
+  const r=btn.getBoundingClientRect(); pop.style.position='fixed'; pop.style.left=Math.max(8,Math.min(r.left,innerWidth-pop.offsetWidth-8))+'px';
+  pop.style.top=Math.min(r.bottom+6,innerHeight-pop.offsetHeight-8)+'px'; pop.style.right='auto';
+  pop.onclick=e=>{ const b=e.target.closest('button'); if(!b) return; const a=b.dataset.a;
+    if(a==='d') exDay.add(n+'|'+b.dataset.d); else if(a==='p') excl.add(n);
+    pop.remove(); if(a!=='x') redrawAll(); };
+  setTimeout(()=>document.addEventListener('click',function off(e){ if(!pop.contains(e.target)){ pop.remove(); document.removeEventListener('click',off); } }),0);
+}
+document.addEventListener('click',e=>{ const b=e.target.closest('button.nm'); if(b){ e.preventDefault(); nmPop(b); } });
 function renderUnit(i,u,r0){
   const el=$(`#unit-${i}`); const PAGE=10;
   const shown={a:PAGE,b:PAGE,c:5,e:3};
@@ -1180,7 +1201,7 @@ function renderUnit(i,u,r0){
     if(list.length>shown[key]) h+=`<button class="more" data-more="${key}">Ver mais ${Math.min(PAGE,list.length-shown[key])}</button>`;
     return h;
   };
-  const draw=()=>{ const r={...r0, sols:r0.sols.filter(s=>!s.moves.some(m=>excl.has(m.from)||excl.has(m.to)))};
+  const draw=()=>{ const r={...r0, sols:r0.sols.filter(s=>!hidden(s))};
     let h=`<div class="unit-h"><h3>${fmtDate(u[0].t)}</h3>${u.map(chip).join('')}<span class="small muted">${esc(u.map(itemText).join(' + '))}</span></div>`;
     if(!r.sols.length) h+='<p class="muted" style="margin:0">Não encontrei trocas que cumpram as regras.</p>';
     else {
