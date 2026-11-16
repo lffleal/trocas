@@ -179,7 +179,9 @@ input[type=search]{font:inherit;width:100%;padding:10px 12px;border-radius:10px;
 .hint{margin:0;padding:10px 12px;border-radius:10px;background:var(--accent-soft);border-left:4px solid var(--accent);color:var(--ink);font-weight:700;font-size:1rem;line-height:1.4}
 .q-title{font-size:1.05rem;font-weight:700;color:var(--ink);padding:6px 10px;border-radius:8px;background:var(--accent-soft);border-left:4px solid var(--accent)}
 .q-title.nogo-t{background:color-mix(in srgb,var(--bad) 14%,transparent);border-left-color:var(--bad)}
-.exclbox{border:1px dashed var(--line);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.exclbox{border:1.5px solid var(--accent);background:var(--accent-soft,color-mix(in srgb,var(--accent) 14%,transparent));border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.exclbox h4{font-size:1.02rem;margin:0}
+.exclbox .grp-h{border-top:0;padding-top:0}
 .exclbox[hidden]{display:none}
 .xchips{display:flex;flex-wrap:wrap;gap:6px}
 .xchip{padding:5px 10px;border-radius:999px;font-size:.85rem;line-height:1.2}
@@ -214,7 +216,7 @@ details summary{cursor:pointer}
   <header class="top">
     <h1>Trocas <span>de Turno</span></h1>
     <span class="eyebrow">Cardiologia · ULSTS</span>
-    <span class="hcorner"><button type="button" class="bell" id="upd-bell" aria-label="Verificar atualizações">🔔</button><span class="ver" id="app-ver" title="Versão da app">v44</span></span>
+    <span class="hcorner"><button type="button" class="bell" id="upd-bell" aria-label="Verificar atualizações">🔔</button><span class="ver" id="app-ver" title="Versão da app">v45</span></span>
     <div class="updask" id="upd-ask" hidden><span>Atualizar agora? Vais ter de carregar outra vez em «Procurar trocas».</span><span class="row"><button type="button" id="upd-yes" class="primary">Atualizar</button><button type="button" id="upd-no">Agora não</button></span></div>
   </header>
 
@@ -1168,8 +1170,8 @@ function renderExcl(){
   const box=document.getElementById('excl-box'); if(!box) return; box.hidden=false;
   const marks=[...[...excl].map(n=>({k:'p|'+n,t:`${nameOf(n)} — não quer trocar`})),
     ...[...exDay].map(x=>{ const [n,d]=x.split('|'); return {k:'d|'+x,t:`${nameOf(n)} — não pode ${fmtDate(DATA.dates[+d])}`}; })];
-  box.innerHTML=`<div class="grp-h"><h4>Respostas dos colegas</h4>${marks.length?`<button type="button" class="more" id="excl-clear">Repor todos</button>`:''}</div>
-    <p class="small muted" style="margin:0">Toca no nome de um colega numa proposta para dizer que ele não pode nesse dia ou que não quer trocar.${marks.length?' Toca numa resposta abaixo para a desfazer.':''}</p>
+  box.innerHTML=`<div class="grp-h"><h4>💬 Respostas dos colegas</h4>${marks.length?`<button type="button" class="more" id="excl-clear">Repor todos</button>`:''}</div>
+    <p class="small" style="margin:0">Já falaste com alguém? <b>Toca no nome do colega</b> numa proposta e diz se ele não pode nesse dia ou se não quer trocar.${marks.length?' Toca numa resposta abaixo para a desfazer.':''}</p>
     ${marks.length?`<div class="xchips">${marks.map(m=>`<button type="button" class="xchip ans" data-k="${esc(m.k)}">✕ ${esc(m.t)}</button>`).join('')}</div>`:''}`;
   box.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{ const k=b.dataset.k; if(k.startsWith('p|')) excl.delete(k.slice(2)); else exDay.delete(k.slice(2)); redrawAll(); });
   const c=document.getElementById('excl-clear'); if(c) c.onclick=()=>{ excl.clear(); exDay.clear(); redrawAll(); };
