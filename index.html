@@ -195,6 +195,7 @@ table.grid td .code.got{outline:2px solid var(--accent);outline-offset:1px}
 .gwas{display:block;font-size:.72rem;color:var(--muted);text-decoration:line-through;margin-top:3px}
 .gfree{font-size:.82rem;color:var(--muted)}
 .goff{font-size:.82rem;color:var(--muted)}
+ul.issues li.chf{color:var(--bad);list-style:'🔒 '}
 .exclbox{border:1.5px solid var(--accent);background:var(--accent-soft,color-mix(in srgb,var(--accent) 14%,transparent));border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
 .exclbox h4{font-size:1.02rem;margin:0}
 .exclbox .grp-h{border-top:0;padding-top:0}
@@ -232,7 +233,7 @@ details summary{cursor:pointer}
   <header class="top">
     <h1>Trocas <span>de Turno</span></h1>
     <span class="eyebrow">Cardiologia · ULSTS</span>
-    <span class="hcorner"><button type="button" class="bell" id="upd-bell" aria-label="Verificar atualizações">🔔</button><span class="ver" id="app-ver" title="Versão da app">v48</span></span>
+    <span class="hcorner"><button type="button" class="bell" id="upd-bell" aria-label="Verificar atualizações">🔔</button><span class="ver" id="app-ver" title="Versão da app">v49</span></span>
     <div class="updask" id="upd-ask" hidden><span>Atualizar agora? Vais ter de carregar outra vez em «Procurar trocas».</span><span class="row"><button type="button" id="upd-yes" class="primary">Atualizar</button><button type="button" id="upd-no">Agora não</button></span></div>
   </header>
 
@@ -640,7 +641,7 @@ function nogoHit(nogo,r){
 }
 function evaluate(p, give, recv, nogo){
   const iv=finalSchedule(p,give,recv); const issues=[]; let lvl=1;
-  const add=(l,m)=>{ if(!issues.includes(m)) issues.push(m); if(l>lvl) lvl=l; };
+  const add=(l,m)=>{ if(l>=5) m='🔒 '+m; if(!issues.includes(m)) issues.push(m); if(l>lvl) lvl=l; }; // 🔒 = é isto que obriga a autorização da chefia
   const nd=DATA.dates.length;
   const who=nameOf(p.num);
   if(has(p.num,'l') && !(state.me && state.me.num===p.num)) add(4,'Colega com restrições de horário: só em último caso');
@@ -704,7 +705,7 @@ function presentialMin(arr){ return arr.reduce((s,i)=>s+(i.prev?0:i.hours),0); }
 function scoreSolution(moves, evals){
   // moves: [{from,to,items}]
   let lvl=1; const issues=[];
-  const add=(l,m)=>{ if(!issues.includes(m)) issues.push(m); if(l>lvl) lvl=l; };
+  const add=(l,m)=>{ if(l>=5) m='🔒 '+m; if(!issues.includes(m)) issues.push(m); if(l>lvl) lvl=l; }; // 🔒 = é isto que obriga a autorização da chefia
   for(const e of evals){ if(e.lvl>lvl) lvl=e.lvl; e.issues.forEach(m=>{ if(!issues.includes(m)) issues.push(m); }); }
   const persons=new Map();
   for(const m of moves){ for(const who of [m.from,m.to]) if(!persons.has(who)) persons.set(who,{give:[],recv:[]});
@@ -1209,7 +1210,7 @@ function solHtml(s){
     ${VIEW==='grelha' ? gridHtml(s) : s.parts ? (()=>{ let k=0; return s.parts.map(pt=>{ const ms=s.moves.slice(k,k+pt.n); k+=pt.n; return `<div class="part"><div class="part-h">${chip(pt.item)} ${esc(pt.item.prev?'Prevenção':(AREA_LABEL[pt.item.area]||''))}</div><ul class="moves">${ms.map(m=>moveHtml(m,s)).join('')}</ul></div>`; }).join(''); })()
       : `<ul class="moves">${s.moves.map(m=>moveHtml(m,s)).join('')}</ul>`}
     ${debt}
-    ${s.issues.length?`<ul class="issues">${s.issues.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}
+    ${s.issues.length?`<ul class="issues">${[...s.issues].sort((x,y)=>(y.startsWith('🔒')-x.startsWith('🔒'))).map(x=>x.startsWith('🔒')?`<li class="chf"><b>Precisa de autorização:</b> ${esc(x.slice(2).trim())}</li>`:`<li>${esc(x)}</li>`).join('')}</ul>`:''}
     <div class="hours"><strong>Horas de trabalho no mês:</strong>${ds.every(d=>d.d===0)?' '+hrs:`<div class="hlist">${hrs}</div>`}</div>
     ${prev}</article>`;
 }
