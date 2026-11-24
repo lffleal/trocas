@@ -233,7 +233,7 @@ details summary{cursor:pointer}
   <header class="top">
     <h1>Trocas <span>de Turno</span></h1>
     <span class="eyebrow">Cardiologia · ULSTS</span>
-    <span class="hcorner"><button type="button" class="bell" id="upd-bell" aria-label="Verificar atualizações">🔔</button><span class="ver" id="app-ver" title="Versão da app">v51</span></span>
+    <span class="hcorner"><button type="button" class="bell" id="upd-bell" aria-label="Verificar atualizações">🔔</button><span class="ver" id="app-ver" title="Versão da app">v52</span></span>
     <div class="updask" id="upd-ask" hidden><span>Atualizar agora? Vais ter de carregar outra vez em «Procurar trocas».</span><span class="row"><button type="button" id="upd-yes" class="primary">Atualizar</button><button type="button" id="upd-no">Agora não</button></span></div>
   </header>
 
@@ -760,6 +760,15 @@ function scoreSolution(moves, evals){
   // pagar fim de semana com turno igual no mesmo dia: M de sábado por M de sábado, T de domingo/feriado por T de domingo/feriado
   const wk=i=>{ const k=dT(DATA.dates[i.di]); return k==='B'?'B':(k==='D'||k==='F')?'D':'S'; };
   let wkInv=false, exactW=true, wkScore=0; const meNum=moves[0].from;
+  // folgas: é sempre preferível que os colegas fiquem com o mesmo número de dias de folga (trocar turno por turno, mesmo que seja no mesmo dia)
+  let folgaLoss=0;
+  for(const [pn,g] of persons){ if(pn===meNum) continue; const p=DATA.byNum.get(pn); if(!p) continue;
+    const gaveIds=new Set(g.give.map(i=>i.id));
+    const before=new Set(p.base.filter(b=>!b.prev).map(b=>b.di));
+    const after=new Set([...p.base.filter(b=>!b.prev && !gaveIds.has(b.id)).map(b=>b.di), ...g.recv.filter(i=>!i.prev).map(i=>i.di)]);
+    // um MT dado por inteiro ou só metade: o dia só fica livre se não sobrar nada nesse dia
+    for(const i of g.give.filter(i=>i.half&&!i.prev)){ /* a outra metade fica: o dia continua de trabalho */ }
+    if(after.size>before.size){ folgaLoss++; const nd=[...after].filter(d=>!before.has(d)); add(2,`${nameOf(pn)} perde uma folga (passa a trabalhar ${nd.map(d=>fmtDate(DATA.dates[d])).join(', ')})`); } }
   for(const [pn,g] of persons){ if(!g.give.length||!g.recv.length){ sameShift=false; sameDay=false; mismatch+=2; exactW=false; continue; }
     if(key(g.give,cat)!==key(g.recv,cat)){ mismatch+=1; sameShift=false; }
     if([...g.give,...g.recv].some(i=>wk(i)!=='S')) wkInv=true;
@@ -773,7 +782,14 @@ function scoreSolution(moves, evals){
         const nn=nameOf(pn); const t=`${nn==='Tu'?'':nn+': '}${nn==='Tu'?gT.charAt(0).toUpperCase()+gT.slice(1):gT} por ${rT} (horas de qualidade ${diff===1?'quase iguais':'diferentes'})`; add(2,t); } } }
   // fim de semana/feriado pago com outro turno ou outro dia: nunca é ideal, no máximo aceitável
   if(wkInv && !exactW && lvl<2) lvl=2;
-  return {lvl,issues,deltas,sumAbs,people:persons.size,prevInfo,mismatch,sameShift,sameDay,prevLoss,dayDiff,wkExact:wkScore,wkSame:wkInv&&exactW};
+  // folgas: preferir que ninguém ganhe ou perca dias de trabalho (ex.: M por T no mesmo dia em vez de alguém perder uma folga)
+  let folgaChg=0;
+  for(const [pn,g] of persons){ const P=DATA.byNum.get(pn); if(!P) continue;
+    const days=new Set([...g.give,...g.recv].map(i=>i.di));
+    for(const d of days){ const base=P.base.filter(b=>b.di===d&&!b.prev); const before=base.length>0;
+      const gone=b=>g.give.some(x=>x.id===b.id); const after=base.some(b=>!gone(b)) || g.recv.some(i=>i.di===d&&!i.prev);
+      if(before!==after) folgaChg+=after?1:-1; } }
+  return {lvl,issues,deltas,sumAbs,people:persons.size,prevInfo,mismatch,sameShift,sameDay,prevLoss,dayDiff,folgaChg,wkExact:wkScore,folgaLoss,wkSame:wkInv&&exactW};
 }
 
 function search(me, unitItems, nogo, budgetMs=3500){
@@ -941,7 +957,8 @@ function search(me, unitItems, nogo, budgetMs=3500){
   const tier=x=> x.lvl<=2 ? (x.people===2?0:1) : 2;
   sols.forEach(x=>x.tier=tier(x));
   const dd=x=>(x.tier<2&&x.dayDiff)?1:0; const bigD=x=>x.sumAbs>300?1:0; // trocas em que alguém fica a dever muitas horas vão para o fim da sua secção
-  sols.sort((a,b)=>a.tier-b.tier||dd(a)-dd(b)||bigD(a)-bigD(b)||(a.wkExact||0)-(b.wkExact||0)||a.lvl-b.lvl||a.people-b.people||a.mismatch-b.mismatch||a.sumAbs-b.sumAbs||nItems(a)-nItems(b)||a.issues.length-b.issues.length);
+  const fg=x=>x.folgaChg?1:0; // trocas em que alguém perde ou ganha uma folga vêm depois das que mantêm as folgas de todos
+  sols.sort((a,b)=>a.tier-b.tier||dd(a)-dd(b)||bigD(a)-bigD(b)||(a.folgaLoss||0)-(b.folgaLoss||0)||fg(a)-fg(b)||(a.wkExact||0)-(b.wkExact||0)||(new Set(a.moves.flatMap(m=>m.items.map(i=>i.di))).size-new Set(b.moves.flatMap(m=>m.items.map(i=>i.di))).size)||a.lvl-b.lvl||a.people-b.people||a.mismatch-b.mismatch||a.sumAbs-b.sumAbs||nItems(a)-nItems(b)||a.issues.length-b.issues.length);
   // mantém só a melhor variante de cada combinação de pessoas e dias
   const best=new Set(); const uniq=[];
   for(const s of sols){ const k=s.moves.map(m=>`${m.from}>${m.to}@${m.items.map(i=>i.di).join('+')}`).join('|'); if(best.has(k)) continue; best.add(k); uniq.push(s); }
@@ -1150,7 +1167,7 @@ function addSplitCombos(me,u,r,nogo){
     r.sols.push(sol);
   }
   // dentro de cada grupo: primeiro o nível; em empate, o bloco inteiro antes da divisão por colegas
-  r.sols.sort((a,b)=>Math.floor(a.tier)-Math.floor(b.tier)||((a.tier<2&&a.dayDiff)?1:0)-((b.tier<2&&b.dayDiff)?1:0)||((a.sumAbs>300)-(b.sumAbs>300))||(a.wkExact||0)-(b.wkExact||0)||a.lvl-b.lvl||(a.parts?1:0)-(b.parts?1:0)||a.people-b.people||(a.mismatch||0)-(b.mismatch||0)||a.sumAbs-b.sumAbs);
+  r.sols.sort((a,b)=>Math.floor(a.tier)-Math.floor(b.tier)||((a.tier<2&&a.dayDiff)?1:0)-((b.tier<2&&b.dayDiff)?1:0)||((a.sumAbs>300)-(b.sumAbs>300))||((a.folgaLoss||0)-(b.folgaLoss||0))||((a.folgaChg?1:0)-(b.folgaChg?1:0))||(a.wkExact||0)-(b.wkExact||0)||(new Set(a.moves.flatMap(m=>m.items.map(i=>i.di))).size-new Set(b.moves.flatMap(m=>m.items.map(i=>i.di))).size)||a.lvl-b.lvl||(a.parts?1:0)-(b.parts?1:0)||a.people-b.people||(a.mismatch||0)-(b.mismatch||0)||a.sumAbs-b.sumAbs);
 }
 function moveHtml(m,s){ const nb=n=>{ if(n===state.me.num) return esc(nameOf(n)); const days=s?[...new Set(s.moves.filter(x=>x.to===n).flatMap(x=>x.items.map(i=>i.di)))]:[];
     return `<button type="button" class="nm" data-p="${n}" data-days="${days.join(',')}">${esc(nameOf(n))}</button>`; };
