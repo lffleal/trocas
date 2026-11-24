@@ -232,7 +232,7 @@ details summary{cursor:pointer}
   <header class="top">
     <h1>Trocas <span>de Turno</span></h1>
     <span class="eyebrow">Cardiologia · ULSTS</span>
-    <span class="hcorner"><button type="button" class="bell" id="upd-bell" aria-label="Verificar atualizações">🔔</button><span class="ver" id="app-ver" title="Versão da app">v47</span></span>
+    <span class="hcorner"><button type="button" class="bell" id="upd-bell" aria-label="Verificar atualizações">🔔</button><span class="ver" id="app-ver" title="Versão da app">v48</span></span>
     <div class="updask" id="upd-ask" hidden><span>Atualizar agora? Vais ter de carregar outra vez em «Procurar trocas».</span><span class="row"><button type="button" id="upd-yes" class="primary">Atualizar</button><button type="button" id="upd-no">Agora não</button></span></div>
   </header>
 
@@ -939,7 +939,8 @@ function search(me, unitItems, nogo, budgetMs=3500){
   // ordem: ideais/quase ideais diretas → ideais/quase ideais com 3+ pessoas → restantes por nível
   const tier=x=> x.lvl<=2 ? (x.people===2?0:1) : 2;
   sols.forEach(x=>x.tier=tier(x));
-  const dd=x=>(x.tier<2&&x.dayDiff)?1:0; sols.sort((a,b)=>a.tier-b.tier||dd(a)-dd(b)||(a.wkExact||0)-(b.wkExact||0)||a.lvl-b.lvl||a.people-b.people||a.mismatch-b.mismatch||a.sumAbs-b.sumAbs||nItems(a)-nItems(b)||a.issues.length-b.issues.length);
+  const dd=x=>(x.tier<2&&x.dayDiff)?1:0; const bigD=x=>x.sumAbs>300?1:0; // trocas em que alguém fica a dever muitas horas vão para o fim da sua secção
+  sols.sort((a,b)=>a.tier-b.tier||dd(a)-dd(b)||bigD(a)-bigD(b)||(a.wkExact||0)-(b.wkExact||0)||a.lvl-b.lvl||a.people-b.people||a.mismatch-b.mismatch||a.sumAbs-b.sumAbs||nItems(a)-nItems(b)||a.issues.length-b.issues.length);
   // mantém só a melhor variante de cada combinação de pessoas e dias
   const best=new Set(); const uniq=[];
   for(const s of sols){ const k=s.moves.map(m=>`${m.from}>${m.to}@${m.items.map(i=>i.di).join('+')}`).join('|'); if(best.has(k)) continue; best.add(k); uniq.push(s); }
@@ -1148,7 +1149,7 @@ function addSplitCombos(me,u,r,nogo){
     r.sols.push(sol);
   }
   // dentro de cada grupo: primeiro o nível; em empate, o bloco inteiro antes da divisão por colegas
-  r.sols.sort((a,b)=>Math.floor(a.tier)-Math.floor(b.tier)||((a.tier<2&&a.dayDiff)?1:0)-((b.tier<2&&b.dayDiff)?1:0)||(a.wkExact||0)-(b.wkExact||0)||a.lvl-b.lvl||(a.parts?1:0)-(b.parts?1:0)||a.people-b.people||(a.mismatch||0)-(b.mismatch||0)||a.sumAbs-b.sumAbs);
+  r.sols.sort((a,b)=>Math.floor(a.tier)-Math.floor(b.tier)||((a.tier<2&&a.dayDiff)?1:0)-((b.tier<2&&b.dayDiff)?1:0)||((a.sumAbs>300)-(b.sumAbs>300))||(a.wkExact||0)-(b.wkExact||0)||a.lvl-b.lvl||(a.parts?1:0)-(b.parts?1:0)||a.people-b.people||(a.mismatch||0)-(b.mismatch||0)||a.sumAbs-b.sumAbs);
 }
 function moveHtml(m,s){ const nb=n=>{ if(n===state.me.num) return esc(nameOf(n)); const days=s?[...new Set(s.moves.filter(x=>x.to===n).flatMap(x=>x.items.map(i=>i.di)))]:[];
     return `<button type="button" class="nm" data-p="${n}" data-days="${days.join(',')}">${esc(nameOf(n))}</button>`; };
