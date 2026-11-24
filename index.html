@@ -179,6 +179,22 @@ input[type=search]{font:inherit;width:100%;padding:10px 12px;border-radius:10px;
 .hint{margin:0;padding:10px 12px;border-radius:10px;background:var(--accent-soft);border-left:4px solid var(--accent);color:var(--ink);font-weight:700;font-size:1rem;line-height:1.4}
 .q-title{font-size:1.05rem;font-weight:700;color:var(--ink);padding:6px 10px;border-radius:8px;background:var(--accent-soft);border-left:4px solid var(--accent)}
 .q-title.nogo-t{background:color-mix(in srgb,var(--bad) 14%,transparent);border-left-color:var(--bad)}
+.gwrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -2px}
+table.grid{border-collapse:collapse;width:100%;font-size:.86rem;min-width:0}
+table.grid th,table.grid td{border:1px solid var(--line);padding:6px 4px;text-align:center;vertical-align:middle}
+table.grid thead th:first-child{position:sticky;left:0;z-index:2;background:var(--surface)}
+table.grid thead th{background:color-mix(in srgb,var(--ink) 6%,transparent);font-weight:600;font-size:.74rem;line-height:1.25;color:var(--muted)}
+table.grid thead th b{color:var(--ink);font-size:.86rem;white-space:nowrap}
+table.grid thead th.we b{color:var(--accent)}
+table.grid .mc{font-size:.62rem;padding:0 3px}
+table.grid th.gn{position:sticky;left:0;z-index:1;background:var(--surface);text-align:left;font-weight:700;white-space:normal;min-width:84px;max-width:120px;padding-left:8px}
+table.grid td{min-width:58px}
+table.grid td.chg{background:var(--accent-soft,color-mix(in srgb,var(--accent) 14%,transparent))}
+table.grid td .code{margin:1px}
+table.grid td .code.got{outline:2px solid var(--accent);outline-offset:1px}
+.gwas{display:block;font-size:.72rem;color:var(--muted);text-decoration:line-through;margin-top:3px}
+.gfree{font-size:.82rem;color:var(--muted)}
+.goff{font-size:.82rem;color:var(--muted)}
 .exclbox{border:1.5px solid var(--accent);background:var(--accent-soft,color-mix(in srgb,var(--accent) 14%,transparent));border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
 .exclbox h4{font-size:1.02rem;margin:0}
 .exclbox .grp-h{border-top:0;padding-top:0}
@@ -216,7 +232,7 @@ details summary{cursor:pointer}
   <header class="top">
     <h1>Trocas <span>de Turno</span></h1>
     <span class="eyebrow">Cardiologia · ULSTS</span>
-    <span class="hcorner"><button type="button" class="bell" id="upd-bell" aria-label="Verificar atualizações">🔔</button><span class="ver" id="app-ver" title="Versão da app">v45</span></span>
+    <span class="hcorner"><button type="button" class="bell" id="upd-bell" aria-label="Verificar atualizações">🔔</button><span class="ver" id="app-ver" title="Versão da app">v47</span></span>
     <div class="updask" id="upd-ask" hidden><span>Atualizar agora? Vais ter de carregar outra vez em «Procurar trocas».</span><span class="row"><button type="button" id="upd-yes" class="primary">Atualizar</button><button type="button" id="upd-no">Agora não</button></span></div>
   </header>
 
@@ -946,7 +962,8 @@ const state={me:null,free:new Map(),nogo:new Map()}; // free: di -> Set(item ids
 
 function shortName(p){ const parts=p.name.replace(/\(UCIC\)|\*/g,'').trim().split(/\s+/); const cap=w=>w.charAt(0)+w.slice(1).toLowerCase(); return parts.length>1?`${cap(parts[0])} ${cap(parts[parts.length-1])}`:cap(parts[0]); }
 function nameOf(num){ if(state.me&&num===state.me.num) return 'Tu'; const p=DATA.byNum.get(num); return p?shortName(p):num; }
-function shortCode(it){ if(it.half) return ({d:'MT',n:'N',m:'M',t:'T',pm:'M',pt:'T'})[it.half]||it.code; return it.code; }
+function shortCode(it){ if(it.half && it.pcode && it.pcode!==it.code) return it.pcode; // metade de um MT: mostra o código equivalente (ex.: tarde do MT1 = T1)
+  if(it.half) return ({d:'MT',n:'N',m:'M',t:'T',pm:'M',pt:'T'})[it.half]||it.code; return it.code; }
 function chip(it){ const k=it.extra?'EXTRA':(it.medcir?'PLAIN':it.area); const cls=['HEMO','PREV','CIC','REAB','REABENS','ENSINOS','RECOBRO','PACES','EXTRA','ECO'].includes(k)?` k-${k}`:'';
   return `<span class="code${cls}" title="${esc(AREA_LABEL[it.area]||'')}">${esc(shortCode(it))}${it.medcir?'<span class="mc">Med Cir</span>':''}</span>`; }
 function itemText(it){ if(it.prev) return it.half?({d:'prevenção de dia',n:'prevenção de noite',pm:'prevenção de manhã (6 h)',pt:'prevenção de tarde (6 h)'})[it.half]||'prevenção':'prevenção'; const a=AREA_LABEL[it.area]||''; return it.half?`${a}, ${it.half==='m'?'manhã':'tarde'} do ${it.code}`:a; }
@@ -1137,6 +1154,41 @@ function moveHtml(m,s){ const nb=n=>{ if(n===state.me.num) return esc(nameOf(n))
     return `<button type="button" class="nm" data-p="${n}" data-days="${days.join(',')}">${esc(nameOf(n))}</button>`; };
   return `<li><span class="who">${nb(m.from)} → ${nb(m.to)}</span><span class="what">${m.items.map(it=>`${chip(it)} ${esc(fmtDate(it.t))} · ${hm(it.s)}–${hm(it.e)} · ${esc(itemText(it))}`).join(' + ')}</span></li>`; }
 function hClass(min){ const a=Math.abs(min); return a===0?'ok':(a<=150?'warn':'bad'); }
+
+// ---------- grelha da proposta: uma linha por pessoa, uma coluna por dia; cada célula = o que fica a fazer depois da troca ----------
+let VIEW=(()=>{ try{ return localStorage.getItem('trocas.view')||'grelha'; }catch(e){ return 'grelha'; } })();
+const WD3=['DOM','SEG','TER','QUA','QUI','SEX','SÁB'];
+function gLabel(it){ return it.half ? (shortCode(it)) : it.code; }
+function gChip(it,cls){ return chip(it).replace('class="code','class="code'+(cls?' '+cls:'')); }
+function gridHtml(s){
+  const ppl=[]; const add=n=>{ if(!ppl.includes(n)) ppl.push(n); };
+  add(state.me.num); s.moves.forEach(m=>{ add(m.from); add(m.to); });
+  const days=[...new Set(s.moves.flatMap(m=>m.items.map(i=>i.di)))].sort((a,b)=>a-b);
+  const head=days.map(d=>{ const t=DATA.dates[d], x=new Date(t); return `<th class="${(wday(t)===0||wday(t)===6||isHoliday(t))?'we':''}">${WD3[x.getUTCDay()]}<br><b>${x.getUTCDate()} ${MON_AB[x.getUTCMonth()]}</b></th>`; }).join('');
+  const rows=ppl.map(n=>{ const p=DATA.byNum.get(n);
+    const nameCell = n===state.me.num ? `<th class="gn">Tu</th>` : `<th class="gn"><button type="button" class="nm" data-p="${n}" data-days="${[...new Set(s.moves.filter(x=>x.to===n).flatMap(x=>x.items.map(i=>i.di)))].join(',')}">${esc(nameOf(n))}</button></th>`;
+    const cells=days.map(d=>{
+      const before=p.base.filter(b=>b.di===d); const c=p.cellsByIdx[d];
+      const gave=s.moves.filter(m=>m.from===n).flatMap(m=>m.items).filter(i=>i.di===d);
+      const got=s.moves.filter(m=>m.to===n).flatMap(m=>m.items).filter(i=>i.di===d);
+      const changed=gave.length||got.length;
+      const offTxt=c&&c.off&&c.off.length?c.off.join(' '):'';
+      // o que fica: turnos que não deu (ou a parte que sobra de um MT dividido) + os que recebe
+      const keep=[]; for(const b of before){ const whole=gave.some(g=>g.id===b.id); if(whole) continue;
+        const halves=gave.filter(g=>g.parent===b.id); if(!halves.length){ keep.push({it:b}); continue; }
+        const rest=splitPrev(b).filter(h=>!halves.some(g=>g.id===h.id||(g.half===h.half)) && !(halves.some(g=>g.half==='d'||g.half==='n') && false));
+        rest.filter(h=>!halves.some(g=>(g.abs<h.abe && h.abs<g.abe && Math.min(g.abe,h.abe)-Math.max(g.abs,h.abs)>60))).forEach(h=>keep.push({it:h})); }
+      const after=[...keep, ...got.map(it=>({it,rec:true}))];
+      let inner = after.length ? after.map(x=>gChip(x.it, x.rec?'got':'')).join('') : (changed? '<span class="gfree">Folga</span>' : `<span class="goff">${esc(offTxt||'—')}</span>`);
+      if(changed){ const was = before.length ? before.map(b=>b.code).join('+') : (offTxt||'folga'); inner+=`<span class="gwas">era ${esc(was)}</span>`; }
+      return `<td class="${changed?'chg':''}">${inner}</td>`; }).join('');
+    return `<tr>${nameCell}${cells}</tr>`; }).join('');
+  return `<div class="gwrap"><table class="grid"><thead><tr><th></th>${head}</tr></thead><tbody>${rows}</tbody></table></div>
+    <p class="small muted" style="margin:0">Depois da troca · o contorno marca o turno que a pessoa passa a fazer.</p>`;
+}
+function viewToggle(){ return `<button type="button" class="more" id="view-tg">${VIEW==='grelha'?'Ver em lista':'Ver em grelha'}</button>`; }
+document.addEventListener('click',e=>{ if(e.target.id!=='view-tg') return; VIEW=VIEW==='grelha'?'lista':'grelha'; try{ localStorage.setItem('trocas.view',VIEW); }catch(_){}
+  e.target.textContent=VIEW==='grelha'?'Ver em lista':'Ver em grelha'; unitRedraws.forEach(f=>f()); });
 function solHtml(s){
   const ds=s.deltas;
   const hrs = ds.every(d=>d.d===0) ? `<span class="v ok">iguais para todos</span>`
@@ -1153,7 +1205,7 @@ function solHtml(s){
   const prev = s.prevInfo.length ? `<div class="hours"><strong>Prevenção:</strong><div class="hlist">${s.prevInfo.map(p=>`<div class="hrow"><span><b>${esc(nameOf(p.num))}</b> dá ${prevTxt(p.give)}, recebe ${prevTxt(p.recv)}</span><span class="v ${p.unbal?'bad':'ok'}">${p.unbal?'fica a acertar':'certo'}</span></div>`).join('')}</div></div>` : '';
   return `<article class="sol" data-l="${s.lvl}"><div class="row spread"><span class="lvl">${LVL_LABEL[s.lvl]}</span><span class="small muted">${s.people} pessoas</span></div>
     ${tags.length?`<div class="row" style="gap:6px">${tags.map(t=>`<span class="tag">✓ ${t}</span>`).join('')}</div>`:''}
-    ${s.parts ? (()=>{ let k=0; return s.parts.map(pt=>{ const ms=s.moves.slice(k,k+pt.n); k+=pt.n; return `<div class="part"><div class="part-h">${chip(pt.item)} ${esc(pt.item.prev?'Prevenção':(AREA_LABEL[pt.item.area]||''))}</div><ul class="moves">${ms.map(m=>moveHtml(m,s)).join('')}</ul></div>`; }).join(''); })()
+    ${VIEW==='grelha' ? gridHtml(s) : s.parts ? (()=>{ let k=0; return s.parts.map(pt=>{ const ms=s.moves.slice(k,k+pt.n); k+=pt.n; return `<div class="part"><div class="part-h">${chip(pt.item)} ${esc(pt.item.prev?'Prevenção':(AREA_LABEL[pt.item.area]||''))}</div><ul class="moves">${ms.map(m=>moveHtml(m,s)).join('')}</ul></div>`; }).join(''); })()
       : `<ul class="moves">${s.moves.map(m=>moveHtml(m,s)).join('')}</ul>`}
     ${debt}
     ${s.issues.length?`<ul class="issues">${s.issues.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}
@@ -1204,7 +1256,7 @@ function renderUnit(i,u,r0){
     return h;
   };
   const draw=()=>{ const r={...r0, sols:r0.sols.filter(s=>!hidden(s))};
-    let h=`<div class="unit-h"><h3>${fmtDate(u[0].t)}</h3>${u.map(chip).join('')}<span class="small muted">${esc(u.map(itemText).join(' + '))}</span></div>`;
+    let h=`<div class="unit-h"><h3>${fmtDate(u[0].t)}</h3>${u.map(chip).join('')}<span class="small muted">${esc(u.map(itemText).join(' + '))}</span>${i===0?viewToggle():''}</div>`;
     if(!r.sols.length) h+='<p class="muted" style="margin:0">Não encontrei trocas que cumpram as regras.</p>';
     else {
       const t0=r.sols.filter(x=>x.tier<1), t1=r.sols.filter(x=>x.tier>=1&&x.tier<2), t2=r.sols.filter(x=>x.tier>=2&&x.lvl<=4), t3a=r.sols.filter(x=>x.tier>=2&&x.lvl>=5); const alt=t0.length+t1.length+t2.length+t3a.filter(x=>!x.prevLoss).length; const lossHidden=alt?t3a.filter(x=>x.prevLoss).length:0; const t3=alt?t3a.filter(x=>!x.prevLoss):t3a;
