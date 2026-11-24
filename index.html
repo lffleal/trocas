@@ -233,7 +233,7 @@ details summary{cursor:pointer}
   <header class="top">
     <h1>Trocas <span>de Turno</span></h1>
     <span class="eyebrow">Cardiologia · ULSTS</span>
-    <span class="hcorner"><button type="button" class="bell" id="upd-bell" aria-label="Verificar atualizações">🔔</button><span class="ver" id="app-ver" title="Versão da app">v49</span></span>
+    <span class="hcorner"><button type="button" class="bell" id="upd-bell" aria-label="Verificar atualizações">🔔</button><span class="ver" id="app-ver" title="Versão da app">v51</span></span>
     <div class="updask" id="upd-ask" hidden><span>Atualizar agora? Vais ter de carregar outra vez em «Procurar trocas».</span><span class="row"><button type="button" id="upd-yes" class="primary">Atualizar</button><button type="button" id="upd-no">Agora não</button></span></div>
   </header>
 
@@ -795,7 +795,7 @@ function search(me, unitItems, nogo, budgetMs=3500){
   const mergeNotes=(...ns)=>{ const v=ns.filter(Boolean); if(!v.length) return null; return {l:Math.max(...v.map(x=>x.l)),m:v.flatMap(x=>x.m)}; };
   const within=()=>performance.now()-t0<budgetMs;
   const uS=Math.min(...unitItems.map(i=>i.abs)), uE=Math.max(...unitItems.map(i=>i.abe));
-  const backToMe=s=>s.abs<uE && uS<s.abe; // receber de volta no horário que quero libertar não serve
+  const backToMe=s=>Math.min(s.abe,uE)-Math.max(s.abs,uS)>120; // receber de volta (quase) o mesmo horário que quero libertar não serve; até 2 h em comum é aceite (passagem de turno, T que entra às 13:00, M que sai às 15:00…)
   const same=(a,b)=>a.di===b.di&&a.s===b.s&&a.e===b.e&&a.area===b.area&&!!a.prev===!!b.prev;
   const pointless=(give,recv)=>recv.some(r=>give.some(g=>same(g,r)));
   // prevenção só se troca por prevenção; turno presencial só por turno presencial
